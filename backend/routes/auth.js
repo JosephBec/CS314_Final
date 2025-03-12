@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', error.message);
     res.status(500).json({ error: 'Error registering user' });
   }
 });
@@ -44,26 +44,20 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log('Login attempt:', { username, attemptedPassword: password });
+    console.log(`Login attempt for user: ${username}`);
 
     // Find user
     const user = await User.findOne({ username });
     if (!user) {
-      console.log('User not found:', username);
+      console.log(`Login failed: User ${username} not found`);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    console.log('Found user:', {
-      username: user.username,
-      hashedPassword: user.password
-    });
-
     // Compare password
     const validPassword = await bcrypt.compare(password, user.password);
-    console.log('Password comparison result:', validPassword);
 
     if (!validPassword) {
-      console.log('Invalid password for user:', username);
+      console.log(`Login failed: Invalid password for user ${username}`);
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -74,7 +68,7 @@ router.post('/login', async (req, res) => {
       profileImage: user.profileImage || ''
     };
 
-    console.log('Login successful, sending response:', userResponse);
+    console.log(`Login successful for user: ${username}`);
     
     // Explicitly set status and headers
     res.status(200)
@@ -82,7 +76,7 @@ router.post('/login', async (req, res) => {
        .json(userResponse);
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error:', error.message);
     res.status(500).json({ error: 'Internal server error during login' });
   }
 });
@@ -106,7 +100,7 @@ router.post('/create-test-user', async (req, res) => {
       password: 'testpassword' // The plain password to use for login
     });
   } catch (error) {
-    console.error('Error creating test user:', error);
+    console.error('Error creating test user:', error.message);
     res.status(500).json({ error: 'Failed to create test user' });
   }
 });
@@ -123,7 +117,7 @@ router.delete('/delete-all-users', async (req, res) => {
     console.log('All users deleted successfully');
     res.json({ message: 'All users deleted successfully' });
   } catch (error) {
-    console.error('Error deleting users:', error);
+    console.error('Error deleting users:', error.message);
     res.status(500).json({ error: 'Failed to delete users' });
   }
 });
@@ -174,7 +168,7 @@ router.delete('/delete/:userId', async (req, res) => {
 
     res.json({ message: 'Account and related data deleted successfully' });
   } catch (error) {
-    console.error('Delete account error:', error);
+    console.error('Delete account error:', error.message);
     res.status(500).json({ error: 'Error deleting account' });
   }
 });
