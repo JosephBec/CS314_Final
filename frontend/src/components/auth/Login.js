@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -17,9 +16,8 @@ function Login() {
     try {
       // First, call the login function from AuthContext
       await login({ username, password });
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.response?.data?.error || 'An error occurred during login');
     }
   };
