@@ -1,0 +1,126 @@
+.message-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0;
+  padding: 0 16px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.message-wrapper.sent {
+  align-items: flex-end;
+}
+
+.message-wrapper.received {
+  align-items: flex-start;
+}
+
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.sent .message-row {
+  justify-content: flex-end;
+}
+
+.received .message-row {
+  justify-content: flex-start;
+}
+
+.message-profile-pic {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.sent .message {
+  background-color: #0084ff;
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.received .message {
+  background-color: #e9ecef;
+  color: black;
+  border-top-left-radius: 4px;
+}
+
+.message-content {
+  position: relative;
+  word-break: break-word;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  flex-direction: column;
+}
+
+.sent .message-content {
+  justify-content: flex-end;
+}
+
+.received .message-content {
+  justify-content: flex-start;
+}
+
+.message-text {
+  text-align: left;
+}
+
+.unsend-button {
+  position: absolute;
+  left: -40px;
+  background: none;
+  border: none;
+  color: #ff4444;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.message:hover .unsend-button {
+  opacity: 1;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.sent .message-time {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.received .message-time {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.message-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: contain;
+  margin: 4px 0;
+}
