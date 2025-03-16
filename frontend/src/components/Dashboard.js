@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Settings from './Settings';
 import Message from './Message';
+import './Dashboard.css';
 
 function Dashboard() {
   const { user, logout, updateUser, setUser } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -37,6 +40,10 @@ function Dashboard() {
   const [uploadError, setUploadError] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageCaption, setImageCaption] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState({});
+  const messageContainerRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   console.log('Current user in Dashboard:', user);
 
@@ -387,7 +394,7 @@ function Dashboard() {
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-          },
+          }
         }
       );
       setMessages(prevMessages => [...prevMessages, imageResponse.data]);
@@ -551,16 +558,32 @@ function Dashboard() {
   const renderChatHeader = () => {
     if (selectedFriend) {
       return (
-        <div className="chat-header-user">
-          <div className="user-info">
+        <>
+          <div className="chat-header-info">
             <img
               src={selectedFriend.profileImage || '/default-avatar.png'}
-              alt="Friend's profile"
+              alt="Profile"
               className="profile-picture"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/default-avatar.png';
+              }}
             />
-            <h3>{selectedFriend.username}</h3>
+            <div className="chat-header-user-info">
+              <h3>{selectedFriend.username}</h3>
+              {selectedFriend.bio && <p className="chat-header-bio">{selectedFriend.bio}</p>}
+            </div>
           </div>
-        </div>
+          <div className="chat-header-actions">
+            <button
+              className="remove-friend-button"
+              onClick={() => removeFriend(selectedFriend._id)}
+              title="Remove Friend"
+            >
+              Remove Friend
+            </button>
+          </div>
+        </>
       );
     } else if (selectedGroupChat) {
       return (
@@ -814,6 +837,156 @@ function Dashboard() {
     ));
   };
 
+  const handleTyping = () => {
+    if (!isTyping) {
+      setIsTyping(true);
+      
+      if (selectedFriend) {
+        socket.emit('typing', {
+          userId: user.id,
+          username: user.username,
+          receiverId: selectedFriend._id
+        });
+      } else if (selectedGroupChat) {
+        socket.emit('typing', {
+          userId: user.id,
+          username: user.username,
+          groupId: selectedGroupChat._id
+        });
+      }
+    }
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      
+      if (selectedFriend) {
+        socket.emit('stopTyping', {
+          userId: user.id,
+          receiverId: selectedFriend._id
+        });
+      } else if (selectedGroupChat) {
+        socket.emit('stopTyping', {
+          userId: user.id,
+          groupId: selectedGroupChat._id
+        });
+      }
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    // Listen for typing events
+    socket.on('userTyping', (data) => {
+      setTypingUsers(prev => ({
+        ...prev,
+        [data.userId]: {
+          username: data.username,
+          timestamp: new Date()
+        }
+      }));
+    });
+    
+    // Listen for stop typing events
+    socket.on('userStoppedTyping', (data) => {
+      setTypingUsers(prev => {
+        const newTypingUsers = { ...prev };
+        delete newTypingUsers[data.userId];
+        return newTypingUsers;
+      });
+    });
+    
+    // Join group chat room when selected
+    if (selectedGroupChat) {
+      socket.emit('joinGroup', selectedGroupChat._id);
+    }
+    
+    // Cleanup function
+    return () => {
+      socket.off('userTyping');
+      socket.off('userStoppedTyping');
+      
+      // Leave group chat room when component unmounts or group changes
+      if (selectedGroupChat) {
+        socket.emit('leaveGroup', selectedGroupChat._id);
+      }
+    };
+  }, [socket, selectedGroupChat]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setTypingUsers(prev => {
+        const newTypingUsers = { ...prev };
+        Object.keys(newTypingUsers).forEach(userId => {
+          const typingTime = newTypingUsers[userId].timestamp;
+          if (now - new Date(typingTime) > 3000) {
+            delete newTypingUsers[userId];
+          }
+        });
+        return newTypingUsers;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const renderChatInterface = () => {
+    if (selectedFriend || selectedGroupChat) {
+      return (
+        <div className="chat-interface">
+          <div className="chat-header">
+            {renderChatHeader()}
+          </div>
+          <div className="messages-container" ref={messageContainerRef}>
+            {renderMessages()}
+            {Object.keys(typingUsers).length > 0 && (
+              <div className="typing-indicator">
+                {Object.values(typingUsers).map(user => user.username).join(', ')} 
+                {Object.keys(typingUsers).length === 1 ? ' is typing...' : ' are typing...'}
+              </div>
+            )}
+          </div>
+          <form onSubmit={handleSendMessage} className="message-form">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                handleTyping();
+              }}
+              placeholder="Type a message..."
+              className="message-input"
+            />
+            <label className="image-upload-label">
+              📷
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="image-upload"
+                id="image-upload"
+              />
+            </label>
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      );
+    } else {
+      return (
+        <div className="no-chat-selected">
+          Select a chat to start messaging
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="dashboard">
       <div className="sidebar">
@@ -828,7 +1001,10 @@ function Dashboard() {
                 e.target.src = '/default-avatar.png';
               }}
             />
-            <h2>{user?.username}</h2>
+            <div className="user-details">
+              <h2>{user?.username}</h2>
+              {user?.bio && <p className="user-bio">{user.bio}</p>}
+            </div>
           </div>
         </div>
 
@@ -921,97 +1097,11 @@ function Dashboard() {
       </div>
       
       <div className="chat-area">
-        {(selectedFriend || selectedGroupChat) ? (
-          <>
-            <div className="chat-header">
-              {renderChatHeader()}
-            </div>
-            <div className="messages-container">
-              {renderMessages()}
-            </div>
-            <form onSubmit={handleSendMessage} className="message-form">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-              />
-              <label className="image-upload-label">
-                📷
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="image-upload"
-                  id="image-upload"
-                />
-              </label>
-              <button type="submit">Send</button>
-            </form>
-          </>
-        ) : (
-          <div className="no-chat-selected">
-            Select a chat to start messaging
-          </div>
-        )}
+        {renderChatInterface()}
       </div>
 
       {showSettings && (
-        <div className="settings-modal">
-          <div className="settings-content">
-            <div className="settings-header">
-              <h2>Settings</h2>
-              <button 
-                className="close-button"
-                onClick={() => setShowSettings(false)}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="profile-image-section">
-              <div className="profile-image-container">
-                <img
-                  src={previewImage || user?.profileImage || '/default-avatar.png'}
-                  alt="Profile"
-                  className="profile-image-preview"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/default-avatar.png';
-                  }}
-                />
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="file-input"
-                id="profile-image-input"
-              />
-              <label htmlFor="profile-image-input" className="file-input-label">
-                Choose Image
-              </label>
-              {selectedImage && (
-                <button
-                  className="upload-button"
-                  onClick={handleImageUpload}
-                >
-                  Upload Profile Picture
-                </button>
-              )}
-              {uploadError && <div className="error-message">{uploadError}</div>}
-            </div>
-
-            <div className="account-actions">
-              <button
-                className="delete-account-button"
-                onClick={deleteAccount}
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
+        <Settings onClose={() => setShowSettings(false)} />
       )}
 
       {showCreateGroup && (

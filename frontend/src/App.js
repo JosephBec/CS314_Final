@@ -5,39 +5,42 @@ import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import './App.css';
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={
-              <div>
-                <Login />
-                <p>
-                  Don't have an account? <Link to="/register">Register here</Link>
-                </p>
-              </div>
-            } />
-            <Route path="/register" element={
-              <div>
-                <Register />
-                <p>
-                  Already have an account? <Link to="/login">Login here</Link>
-                </p>
-              </div>
-            } />
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </div>
-      </Router>
+      <SocketProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={
+                <div>
+                  <Login />
+                  <p>
+                    Don't have an account? <Link to="/register">Register here</Link>
+                  </p>
+                </div>
+              } />
+              <Route path="/register" element={
+                <div>
+                  <Register />
+                  <p>
+                    Already have an account? <Link to="/login">Login here</Link>
+                  </p>
+                </div>
+              } />
+              <Route path="/dashboard" element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } />
+            </Routes>
+          </div>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

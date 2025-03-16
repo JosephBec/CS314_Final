@@ -23,7 +23,8 @@ export const AuthProvider = ({ children }) => {
       const userToStore = {
         id: response.data._id,
         username: response.data.username,
-        profileImage: response.data.profileImage || ''
+        profileImage: response.data.profileImage || '',
+        bio: response.data.bio || ''
       };
       
       // Update state and localStorage

@@ -122,6 +122,41 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
+// Update user bio
+router.put('/:userId/bio', async (req, res) => {
+  try {
+    const { bio } = req.body;
+    const userId = req.params.userId;
+    
+    if (!bio && bio !== '') {
+      return res.status(400).json({ error: 'Bio content is required' });
+    }
+    
+    if (bio.length > 500) {
+      return res.status(400).json({ error: 'Bio cannot exceed 500 characters' });
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { bio },
+      { new: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      user: updatedUser,
+      message: 'Bio updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error updating bio:', error.message);
+    res.status(500).json({ error: 'Failed to update bio' });
+  }
+});
+
 // Clear friend request notifications
 router.post('/clear-notifications', async (req, res) => {
   try {

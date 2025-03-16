@@ -55,12 +55,14 @@ router.get('/:userId/:friendId', async (req, res) => {
       {
         sender: friendId,
         receiver: userId,
-        read: false
+        'readBy.user': { $ne: userId }
       },
       {
-        $set: {
-          read: true,
-          readAt: new Date()
+        $push: {
+          readBy: {
+            user: userId,
+            readAt: new Date()
+          }
         }
       }
     );
@@ -135,7 +137,7 @@ router.post('/send-image', (req, res) => {
 router.get('/status/:messageId', async (req, res) => {
   try {
     const message = await Message.findById(req.params.messageId);
-    res.json({ read: message.read, readAt: message.readAt });
+    res.json({ read: message.readBy, readAt: message.readBy[0].readAt });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

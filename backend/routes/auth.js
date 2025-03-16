@@ -31,7 +31,8 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       _id: user._id,
-      username: user.username
+      username: user.username,
+      bio: user.bio || ''
     });
 
   } catch (error) {
@@ -65,7 +66,8 @@ router.post('/login', async (req, res) => {
     const userResponse = {
       _id: user._id,
       username: user.username,
-      profileImage: user.profileImage || ''
+      profileImage: user.profileImage || '',
+      bio: user.bio || ''
     };
 
     console.log(`Login successful for user: ${username}`);

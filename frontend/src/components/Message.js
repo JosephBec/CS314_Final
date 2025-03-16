@@ -9,6 +9,7 @@ function Message({ message, onMessageDelete }) {
   const [timeLeft, setTimeLeft] = useState(0);
   
   const isOwnMessage = message.sender._id === user.id;
+  const isRead = message.readBy && message.readBy.length > 0;
 
   useEffect(() => {
     if (isOwnMessage) {
@@ -102,6 +103,9 @@ function Message({ message, onMessageDelete }) {
           hour: '2-digit', 
           minute: '2-digit' 
         })}
+        {isOwnMessage && isRead && (
+          <span className="read-receipt">Read</span>
+        )}
       </div>
     </div>
   );
