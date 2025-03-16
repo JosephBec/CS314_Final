@@ -40,7 +40,7 @@ describe('4.4 Group Messaging', () => {
         // Register group creator
         return cy.request({
           method: 'POST',
-          url: 'http://localhost:5001/api/auth/register',
+          url: 'http://localhost:5000/api/auth/register',
           body: {
             username: users.groupCreator.username,
             password: users.groupCreator.password
@@ -52,7 +52,7 @@ describe('4.4 Group Messaging', () => {
         // Register first group member
         return cy.request({
           method: 'POST',
-          url: 'http://localhost:5001/api/auth/register',
+          url: 'http://localhost:5000/api/auth/register',
           body: {
             username: users.groupMember1.username,
             password: users.groupMember1.password
@@ -64,7 +64,7 @@ describe('4.4 Group Messaging', () => {
         // Register second group member
         return cy.request({
           method: 'POST',
-          url: 'http://localhost:5001/api/auth/register',
+          url: 'http://localhost:5000/api/auth/register',
           body: {
             username: users.groupMember2.username,
             password: users.groupMember2.password

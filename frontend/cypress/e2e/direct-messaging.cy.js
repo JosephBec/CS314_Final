@@ -34,7 +34,7 @@ describe('4.3 Direct Messaging', () => {
         // Register sender user
         return cy.request({
           method: 'POST',
-          url: 'http://localhost:5001/api/auth/register',
+          url: 'http://localhost:5000/api/auth/register',
           body: {
             username: users.sender.username,
             password: users.sender.password
@@ -46,7 +46,7 @@ describe('4.3 Direct Messaging', () => {
         // Register receiver user
         return cy.request({
           method: 'POST',
-          url: 'http://localhost:5001/api/auth/register',
+          url: 'http://localhost:5000/api/auth/register',
           body: {
             username: users.receiver.username,
             password: users.receiver.password

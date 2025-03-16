@@ -82,7 +82,7 @@ describe('4.1 User Authentication', () => {
     // This step ensures we have a user to test against
     cy.request({
       method: 'POST',
-      url: 'http://localhost:5001/api/auth/register',
+      url: 'http://localhost:5000/api/auth/register',
       body: {
         username,
         password: correctPassword
