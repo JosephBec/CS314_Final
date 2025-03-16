@@ -42,32 +42,39 @@ const upload = multer({
 router.get('/:userId/:friendId', async (req, res) => {
   try {
     const { userId, friendId } = req.params;
-    console.log('Fetching messages for users:', userId, friendId); // Debug log
+    
+    // Special case for the 'unread' route
+    if (friendId === 'unread') {
+      return res.status(400).json({ error: 'Invalid route. Use /api/messages/unread/:userId for unread messages.' });
+    }
+    
+    // Validate both IDs are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(friendId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
 
     // Find all messages between these users in either direction
     const messages = await Message.find({
       $or: [
-        { sender: userId, receiver: friendId },
-        { sender: friendId, receiver: userId }
+        { sender: new mongoose.Types.ObjectId(userId), receiver: new mongoose.Types.ObjectId(friendId) },
+        { sender: new mongoose.Types.ObjectId(friendId), receiver: new mongoose.Types.ObjectId(userId) }
       ]
     })
     .populate('sender', 'username profileImage')
     .populate('receiver', 'username profileImage')
     .sort({ createdAt: 1 });
 
-    console.log('Found messages:', messages); // Debug log
-
     // Mark messages as read
     await Message.updateMany(
       {
-        sender: friendId,
-        receiver: userId,
-        'readBy.user': { $ne: userId }
+        sender: new mongoose.Types.ObjectId(friendId),
+        receiver: new mongoose.Types.ObjectId(userId),
+        'readBy.user': { $ne: new mongoose.Types.ObjectId(userId) }
       },
       {
         $push: {
           readBy: {
-            user: userId,
+            user: new mongoose.Types.ObjectId(userId),
             readAt: new Date()
           }
         }
@@ -85,11 +92,15 @@ router.get('/:userId/:friendId', async (req, res) => {
 router.post('/send', upload.single('image'), async (req, res) => {
   try {
     const { sender, receiver, content } = req.body;
-    console.log('Sending message:', { sender, receiver, content }); // Debug log
+    
+    // Validate sender and receiver are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(sender) || !mongoose.Types.ObjectId.isValid(receiver)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
 
     const message = new Message({
-      sender,
-      receiver,
+      sender: new mongoose.Types.ObjectId(sender),
+      receiver: new mongoose.Types.ObjectId(receiver),
       content,
       imageUrl: req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null
     });
@@ -101,8 +112,6 @@ router.post('/send', upload.single('image'), async (req, res) => {
       .populate('sender', 'username profileImage')
       .populate('receiver', 'username profileImage');
 
-    console.log('Saved message:', populatedMessage); // Debug log
-    
     // Emit to connected users if io is available
     if (io) {
       const connectedUsers = io.sockets.adapter.rooms.get('user_' + receiver);
@@ -131,11 +140,17 @@ router.post('/send-image', (req, res) => {
 
     try {
       const { sender, receiver } = req.body;
+      
+      // Validate sender and receiver are valid ObjectIds
+      if (!mongoose.Types.ObjectId.isValid(sender) || !mongoose.Types.ObjectId.isValid(receiver)) {
+        return res.status(400).json({ error: 'Invalid user ID format' });
+      }
+      
       const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
 
       const message = new Message({
-        sender,
-        receiver,
+        sender: new mongoose.Types.ObjectId(sender),
+        receiver: new mongoose.Types.ObjectId(receiver),
         imageUrl,
         content: 'Sent an image' // Optional text description
       });
@@ -146,8 +161,6 @@ router.post('/send-image', (req, res) => {
       const populatedMessage = await Message.findById(message._id)
         .populate('sender', 'username profileImage')
         .populate('receiver', 'username profileImage');
-
-      console.log('Saved message:', populatedMessage); // Debug log
 
       // Emit to connected users if io is available
       if (io) {
@@ -167,8 +180,19 @@ router.post('/send-image', (req, res) => {
 // Add route to check message status
 router.get('/status/:messageId', async (req, res) => {
   try {
-    const message = await Message.findById(req.params.messageId);
-    res.json({ read: message.readBy, readAt: message.readBy[0].readAt });
+    const { messageId } = req.params;
+    
+    // Validate messageId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID format' });
+    }
+    
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    
+    res.json({ read: message.readBy, readAt: message.readBy[0]?.readAt });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -178,11 +202,15 @@ router.get('/status/:messageId', async (req, res) => {
 router.post('/group', upload.single('image'), async (req, res) => {
   try {
     const { sender, groupId, content } = req.body;
-    console.log('Sending group message:', { sender, groupId, content }); // Debug log
+    
+    // Validate sender and groupId are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(sender) || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
 
     const message = new Message({
-      sender,
-      groupChat: groupId,
+      sender: new mongoose.Types.ObjectId(sender),
+      groupChat: new mongoose.Types.ObjectId(groupId),
       content,
       imageUrl: req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null
     });
@@ -194,8 +222,6 @@ router.post('/group', upload.single('image'), async (req, res) => {
       .populate('sender', 'username profileImage')
       .populate('groupChat');
 
-    console.log('Saved group message:', populatedMessage); // Debug log
-    
     // Emit to connected users if io is available
     if (io) {
       // Format the message for socket emission
@@ -207,7 +233,6 @@ router.post('/group', upload.single('image'), async (req, res) => {
         createdAt: populatedMessage.createdAt
       };
       
-      console.log('Emitting group message:', socketMessage);
       io.to(groupId).emit('newGroupMessage', socketMessage);
     }
     
@@ -223,6 +248,11 @@ router.post('/sendToGroup', async (req, res) => {
   try {
     const { senderId, groupId, content, imageUrl } = req.body;
     
+    // Validate senderId and groupId are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
+    
     // Check if user is a member of the group
     const groupChat = await GroupChat.findById(groupId);
     if (!groupChat) {
@@ -234,8 +264,8 @@ router.post('/sendToGroup', async (req, res) => {
     }
     
     const message = new Message({
-      sender: senderId,
-      groupChat: groupId,
+      sender: new mongoose.Types.ObjectId(senderId),
+      groupChat: new mongoose.Types.ObjectId(groupId),
       content: content || null,
       imageUrl: imageUrl || null,
       readBy: []
@@ -259,7 +289,6 @@ router.post('/sendToGroup', async (req, res) => {
         createdAt: populatedMessage.createdAt
       };
       
-      console.log('Emitting group message:', socketMessage);
       io.to(groupId).emit('newGroupMessage', socketMessage);
     }
     
@@ -274,14 +303,17 @@ router.post('/sendToGroup', async (req, res) => {
 router.get('/group/:groupId', async (req, res) => {
   try {
     const groupId = req.params.groupId;
-    console.log(`Fetching messages for group: ${groupId}`);
     
-    const messages = await Message.find({ groupChat: groupId })
+    // Validate groupId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid group ID format' });
+    }
+    
+    const messages = await Message.find({ groupChat: new mongoose.Types.ObjectId(groupId) })
       .populate('sender', 'username profileImage')
       .populate('groupChat')
       .sort({ createdAt: 1 });
     
-    console.log(`Found ${messages.length} messages for group ${groupId}`);
     res.json(messages);
   } catch (error) {
     console.error('Error fetching group messages:', error);
@@ -293,6 +325,12 @@ router.get('/group/:groupId', async (req, res) => {
 router.delete('/unsend/:messageId', async (req, res) => {
   try {
     const messageId = req.params.messageId;
+    
+    // Validate messageId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ error: 'Invalid message ID format' });
+    }
+    
     const message = await Message.findById(messageId);
 
     if (!message) {
@@ -323,12 +361,19 @@ router.get('/unread/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
     
+    // Validate userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' });
+    }
+    
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    
     // Get unread direct messages
     const directMessages = await Message.aggregate([
       {
         $match: {
-          receiver: mongoose.Types.ObjectId(userId),
-          readBy: { $not: { $elemMatch: { user: mongoose.Types.ObjectId(userId) } } },
+          receiver: userObjectId,
+          readBy: { $not: { $elemMatch: { user: userObjectId } } },
           groupChat: { $exists: false }
         }
       },
@@ -352,8 +397,8 @@ router.get('/unread/:userId', async (req, res) => {
       {
         $match: {
           groupChat: { $exists: true, $ne: null },
-          sender: { $ne: mongoose.Types.ObjectId(userId) },
-          readBy: { $not: { $elemMatch: { user: mongoose.Types.ObjectId(userId) } } }
+          sender: { $ne: userObjectId },
+          readBy: { $not: { $elemMatch: { user: userObjectId } } }
         }
       },
       {
@@ -386,11 +431,14 @@ router.post('/markGroupMessagesAsRead', async (req, res) => {
   try {
     const { userId, groupId } = req.body;
     
-    console.log(`Marking messages as read for user ${userId} in group ${groupId}`);
+    // Validate userId and groupId are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
     
     // Convert string IDs to ObjectIds
-    const userObjectId = mongoose.Types.ObjectId(userId);
-    const groupObjectId = mongoose.Types.ObjectId(groupId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const groupObjectId = new mongoose.Types.ObjectId(groupId);
     
     // Update all messages in the group that are not from this user and haven't been read by this user
     const result = await Message.updateMany(
@@ -409,7 +457,6 @@ router.post('/markGroupMessagesAsRead', async (req, res) => {
       }
     );
     
-    console.log(`Marked ${result.modifiedCount || result.nModified} group messages as read`);
     res.json({ 
       success: true, 
       messagesUpdated: result.modifiedCount || result.nModified 

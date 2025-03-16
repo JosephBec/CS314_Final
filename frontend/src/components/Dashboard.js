@@ -48,8 +48,6 @@ function Dashboard() {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
-  console.log('Current user in Dashboard:', user);
-
   // Polling intervals for friends and chats
   useEffect(() => {
     if (user) {
@@ -142,7 +140,6 @@ function Dashboard() {
   // Update document title with unread count
   const updateDocumentTitle = () => {
     const total = Object.values(unreadCounts).reduce((sum, count) => sum + (count || 0), 0);
-    console.log('Calculating total unread count:', total, 'from', unreadCounts);
     setTotalUnreadCount(total);
     
     if (total > 0) {
@@ -198,16 +195,10 @@ function Dashboard() {
         // Update unread count if not in the current group chat
         if (!selectedGroupChat || selectedGroupChat._id !== data.groupId) {
           const groupKey = `group_${data.groupId}`;
-          console.log(`Updating unread count for group: ${groupKey}`);
-          
-          setUnreadCounts(prev => {
-            const newCounts = {
-              ...prev,
-              [groupKey]: (prev[groupKey] || 0) + 1
-            };
-            console.log('New unread counts:', newCounts);
-            return newCounts;
-          });
+          setUnreadCounts(prev => ({
+            ...prev,
+            [groupKey]: (prev[groupKey] || 0) + 1
+          }));
         }
       }
       
@@ -235,11 +226,10 @@ function Dashboard() {
   
   // Play notification sound
   const playNotificationSound = () => {
-    console.log('Playing notification sound');
     if (notificationSoundRef.current) {
       notificationSoundRef.current.currentTime = 0;
       notificationSoundRef.current.play()
-        .then(() => console.log('Notification sound played successfully'))
+        .then(() => {})
         .catch(err => console.error('Error playing notification:', err));
     } else {
       console.error('Notification sound reference is not available');
@@ -263,8 +253,6 @@ function Dashboard() {
       
       // Only update if there are unread messages
       if (unreadCounts[groupKey] && unreadCounts[groupKey] > 0) {
-        console.log(`Clearing unread count for group: ${groupKey}`);
-        
         setUnreadCounts(prev => ({
           ...prev,
           [groupKey]: 0
@@ -276,7 +264,7 @@ function Dashboard() {
             userId: user.id,
             groupId: selectedGroupChat._id
           })
-          .then(() => console.log('Group messages marked as read'))
+          .then(() => {})
           .catch(err => console.error('Error marking group messages as read:', err));
         }
       }
@@ -293,9 +281,7 @@ function Dashboard() {
   // Fetch unread message counts
   const fetchUnreadCounts = async () => {
     try {
-      console.log('Fetching unread counts for user:', user.id);
       const response = await axios.get(`http://localhost:5000/api/messages/unread/${user.id}`);
-      console.log('Unread counts response:', response.data);
       
       const counts = {};
       
@@ -309,7 +295,6 @@ function Dashboard() {
         counts[`group_${item.groupId}`] = item.count;
       });
       
-      console.log('Processed unread counts:', counts);
       setUnreadCounts(counts);
       
       // Update document title
@@ -451,9 +436,7 @@ function Dashboard() {
 
   const fetchMessages = async (friendId) => {
     try {
-      console.log('Fetching messages between', user.id, 'and', friendId);
       const response = await axios.get(`http://localhost:5000/api/messages/${user.id}/${friendId}`);
-      console.log('Fetched messages:', response.data);
       
       // Sort messages by date
       const sortedMessages = response.data.sort((a, b) => 
@@ -670,9 +653,7 @@ function Dashboard() {
 
   const fetchGroupMessages = async (groupId) => {
     try {
-      console.log('Fetching group messages for:', groupId);
       const response = await axios.get(`http://localhost:5000/api/groupchats/${groupId}/messages`);
-      console.log('Fetched group messages:', response.data);
       
       // Sort messages by date
       const sortedMessages = response.data.sort((a, b) => 
@@ -1132,13 +1113,17 @@ function Dashboard() {
     
     // Listen for typing events
     socket.on('userTyping', (data) => {
-      setTypingUsers(prev => ({
-        ...prev,
-        [data.userId]: {
-          username: data.username,
-          timestamp: new Date()
-        }
-      }));
+      // Only show typing indicator if the user is in the relevant chat
+      if ((data.receiverId && selectedFriend && selectedFriend._id === data.userId) || 
+          (data.groupId && selectedGroupChat && selectedGroupChat._id === data.groupId)) {
+        setTypingUsers(prev => ({
+          ...prev,
+          [data.userId]: {
+            username: data.username,
+            timestamp: new Date()
+          }
+        }));
+      }
     });
     
     // Listen for stop typing events
@@ -1165,7 +1150,7 @@ function Dashboard() {
         socket.emit('leaveGroup', selectedGroupChat._id);
       }
     };
-  }, [socket, selectedGroupChat]);
+  }, [socket, selectedGroupChat, selectedFriend]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1273,8 +1258,6 @@ function Dashboard() {
     return groupChats.map(group => {
       const groupKey = `group_${group._id}`;
       const unreadCount = unreadCounts[groupKey] || 0;
-      
-      console.log(`Group ${group.name} (${groupKey}) has ${unreadCount} unread messages`);
       
       return (
         <div

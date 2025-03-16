@@ -16,7 +16,10 @@ export const SocketProvider = ({ children }) => {
 
     // Set up event listeners
     newSocket.on('connect', () => {
-      console.log('Socket connected');
+      // Only log in development environment
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Socket connected');
+      }
       setIsConnected(true);
       
       // Register user if logged in
@@ -26,7 +29,10 @@ export const SocketProvider = ({ children }) => {
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      // Only log in development environment
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Socket disconnected');
+      }
       setIsConnected(false);
     });
 

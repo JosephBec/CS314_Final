@@ -20,24 +20,32 @@ const io = socketIo(server, {
 const connectedUsers = {};
 const typingUsers = {};
 
+// Helper function to log only in development mode
+const devLog = (message) => {
+  if (process.env.NODE_ENV !== 'production') {
+    // Uncomment the line below if you want to see socket logs during development
+    // console.log(message);
+  }
+};
+
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  devLog('New client connected: ' + socket.id);
   
   // User connects and registers their ID
   socket.on('register', (userId) => {
-    console.log('User registered:', userId);
+    devLog('User registered: ' + userId);
     connectedUsers[userId] = socket.id;
     socket.userId = userId;
     
     // Join user's personal room for direct messages
     socket.join('user_' + userId);
-    console.log(`User ${userId} joined their personal room`);
+    devLog(`User ${userId} joined their personal room`);
   });
   
   // User joins a room (for direct messages or group chats)
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
-    console.log(`User ${socket.userId} joined room ${roomId}`);
+    devLog(`User ${socket.userId} joined room ${roomId}`);
   });
   
   // User starts typing
@@ -89,13 +97,13 @@ io.on('connection', (socket) => {
   // User joins a group chat room
   socket.on('joinGroup', (groupId) => {
     socket.join(groupId);
-    console.log(`User ${socket.userId} joined group ${groupId}`);
+    devLog(`User ${socket.userId} joined group ${groupId}`);
   });
   
   // User leaves a group chat room
   socket.on('leaveGroup', (groupId) => {
     socket.leave(groupId);
-    console.log(`User ${socket.userId} left group ${groupId}`);
+    devLog(`User ${socket.userId} left group ${groupId}`);
   });
   
   // Listen for new messages
@@ -138,7 +146,7 @@ io.on('connection', (socket) => {
   
   // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    devLog('Client disconnected: ' + socket.id);
     if (socket.userId) {
       delete connectedUsers[socket.userId];
     }
