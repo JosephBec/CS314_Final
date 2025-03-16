@@ -1,0 +1,47 @@
+{
+  "testUsers": {
+    "validUser": {
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "password": "Password123"
+    },
+    "invalidUser": {
+      "username": "invaliduser",
+      "email": "invalid@example.com",
+      "password": "WrongPassword"
+    },
+    "sender": {
+      "username": "sender",
+      "email": "sender@example.com",
+      "password": "Password123"
+    },
+    "receiver": {
+      "username": "receiver",
+      "email": "receiver@example.com",
+      "password": "Password123"
+    },
+    "groupCreator": {
+      "username": "groupcreator",
+      "email": "groupcreator@example.com",
+      "password": "Password123"
+    },
+    "groupMember1": {
+      "username": "groupmember1",
+      "email": "groupmember1@example.com",
+      "password": "Password123"
+    },
+    "groupMember2": {
+      "username": "groupmember2",
+      "email": "groupmember2@example.com",
+      "password": "Password123"
+    }
+  },
+  "messages": {
+    "directMessage": "This is a test direct message",
+    "groupMessage": "This is a test group message",
+    "reply": "This is a reply message"
+  },
+  "groups": {
+    "testGroup": "Test Group"
+  }
+}

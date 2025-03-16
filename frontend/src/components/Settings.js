@@ -146,9 +146,10 @@ function Settings({ onClose }) {
         );
 
         if (response.status === 200) {
-          // Success - log out and redirect
+          // First clear user data from local storage and state
           logout();
-          navigate('/login');
+          // Then redirect to login page
+          navigate('/login', { replace: true });
         } else {
           throw new Error('Unexpected response status: ' + response.status);
         }

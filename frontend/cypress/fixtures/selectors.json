@@ -1,0 +1,40 @@
+{
+  "auth": {
+    "loginPage": {
+      "usernameInput": "input[type='text'][placeholder='Username']",
+      "passwordInput": "input[type='password'][placeholder='Password']",
+      "submitButton": "button[type='submit']",
+      "registerLink": "a[href='/register']",
+      "errorMessage": ".error"
+    },
+    "registerPage": {
+      "usernameInput": "input[type='text'][placeholder='Username']",
+      "emailInput": "input[type='email'][placeholder='Email']",
+      "passwordInput": "input[type='password'][placeholder='Password']",
+      "confirmPasswordInput": "input[type='password'][placeholder='Confirm Password']",
+      "submitButton": "button[type='submit']",
+      "successMessage": ".success",
+      "errorMessage": ".error"
+    }
+  },
+  "chat": {
+    "userList": ".friends-list",
+    "userItem": ".friend-item",
+    "groupList": ".group-chats-list",
+    "groupItem": ".group-chat-item",
+    "messageInput": ".message-input",
+    "sendButton": "button[type='submit']",
+    "messageContainer": ".messages-container",
+    "messageItem": ".message",
+    "messageStatus": ".message-status",
+    "logoutButton": ".logout-button"
+  },
+  "group": {
+    "createGroupButton": "button:contains('Create Group')",
+    "groupNameInput": "input[placeholder='Group Name']",
+    "memberSearchInput": "input[placeholder='Search Members']",
+    "addMemberButton": "button:contains('Add')",
+    "createButton": "button:contains('Create Group')",
+    "successMessage": ".success"
+  }
+}
