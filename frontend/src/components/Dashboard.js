@@ -115,6 +115,13 @@ function Dashboard() {
     }
   }, [friends, selectedFriend]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+    }
+  }, [messages, typingUsers]);
+
   const fetchFriends = async () => {
     try {
       const response = await axios.get(`http://localhost:5000/api/friends/${user?.id}`);
