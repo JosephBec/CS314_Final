@@ -81,6 +81,13 @@
   text-align: left;
 }
 
+.sender-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 2px;
+}
+
 .unsend-button {
   position: absolute;
   left: -40px;

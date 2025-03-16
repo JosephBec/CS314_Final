@@ -44,6 +44,9 @@ function Dashboard() {
   const [typingUsers, setTypingUsers] = useState({});
   const messageContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const notificationSoundRef = useRef(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
   console.log('Current user in Dashboard:', user);
 
@@ -121,6 +124,207 @@ function Dashboard() {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
   }, [messages, typingUsers]);
+
+  // Create audio element for notification sound
+  useEffect(() => {
+    notificationSoundRef.current = new Audio('/sounds/notification.mp3');
+    notificationSoundRef.current.volume = 0.5;
+    
+    // Update document title when unread count changes
+    updateDocumentTitle();
+    
+    return () => {
+      // Reset title when component unmounts
+      document.title = 'Direct Message App';
+    };
+  }, []);
+  
+  // Update document title with unread count
+  const updateDocumentTitle = () => {
+    const total = Object.values(unreadCounts).reduce((sum, count) => sum + (count || 0), 0);
+    console.log('Calculating total unread count:', total, 'from', unreadCounts);
+    setTotalUnreadCount(total);
+    
+    if (total > 0) {
+      document.title = `(${total}) Direct Message App`;
+    } else {
+      document.title = 'Direct Message App';
+    }
+  };
+  
+  // Update document title when unread counts change
+  useEffect(() => {
+    updateDocumentTitle();
+  }, [unreadCounts]);
+
+  // Socket event listeners for new messages
+  useEffect(() => {
+    if (!socket) return;
+    
+    // Listen for new direct messages
+    socket.on('newMessage', (data) => {
+      console.log('New direct message received:', data);
+      
+      // Play notification sound if the message is not from the current user
+      if (data.sender._id !== user.id) {
+        playNotificationSound();
+        
+        // Update unread count if not in the current chat
+        if (!selectedFriend || selectedFriend._id !== data.sender._id) {
+          setUnreadCounts(prev => ({
+            ...prev,
+            [data.sender._id]: (prev[data.sender._id] || 0) + 1
+          }));
+        }
+      }
+      
+      // If this is for the currently selected chat, add it to messages
+      if (
+        (selectedFriend && selectedFriend._id === data.sender._id) || 
+        (selectedFriend && selectedFriend._id === data.receiver._id)
+      ) {
+        setMessages(prev => [...prev, data]);
+      }
+    });
+    
+    // Listen for new group messages
+    socket.on('newGroupMessage', (data) => {
+      console.log('New group message received:', data);
+      
+      // Play notification sound if the message is not from the current user
+      if (data.sender !== user.id) {
+        playNotificationSound();
+        
+        // Update unread count if not in the current group chat
+        if (!selectedGroupChat || selectedGroupChat._id !== data.groupId) {
+          const groupKey = `group_${data.groupId}`;
+          console.log(`Updating unread count for group: ${groupKey}`);
+          
+          setUnreadCounts(prev => {
+            const newCounts = {
+              ...prev,
+              [groupKey]: (prev[groupKey] || 0) + 1
+            };
+            console.log('New unread counts:', newCounts);
+            return newCounts;
+          });
+        }
+      }
+      
+      // If this is for the currently selected group chat, add it to messages
+      if (selectedGroupChat && selectedGroupChat._id === data.groupId) {
+        setMessages(prev => [...prev, data]);
+      }
+    });
+    
+    // Join user's room for direct messages
+    if (user && user.id) {
+      socket.emit('joinRoom', `user_${user.id}`);
+    }
+    
+    // Join group chat rooms
+    groupChats.forEach(group => {
+      socket.emit('joinGroup', group._id);
+    });
+    
+    return () => {
+      socket.off('newMessage');
+      socket.off('newGroupMessage');
+    };
+  }, [socket, selectedFriend, selectedGroupChat, user, groupChats]);
+  
+  // Play notification sound
+  const playNotificationSound = () => {
+    console.log('Playing notification sound');
+    if (notificationSoundRef.current) {
+      notificationSoundRef.current.currentTime = 0;
+      notificationSoundRef.current.play()
+        .then(() => console.log('Notification sound played successfully'))
+        .catch(err => console.error('Error playing notification:', err));
+    } else {
+      console.error('Notification sound reference is not available');
+    }
+  };
+
+  // Clear unread count when selecting a friend
+  useEffect(() => {
+    if (selectedFriend) {
+      setUnreadCounts(prev => ({
+        ...prev,
+        [selectedFriend._id]: 0
+      }));
+    }
+  }, [selectedFriend]);
+
+  // Clear unread count when selecting a group chat
+  useEffect(() => {
+    if (selectedGroupChat) {
+      const groupKey = `group_${selectedGroupChat._id}`;
+      
+      // Only update if there are unread messages
+      if (unreadCounts[groupKey] && unreadCounts[groupKey] > 0) {
+        console.log(`Clearing unread count for group: ${groupKey}`);
+        
+        setUnreadCounts(prev => ({
+          ...prev,
+          [groupKey]: 0
+        }));
+        
+        // Mark messages as read in the backend
+        if (user && user.id) {
+          axios.post(`http://localhost:5000/api/messages/markGroupMessagesAsRead`, {
+            userId: user.id,
+            groupId: selectedGroupChat._id
+          })
+          .then(() => console.log('Group messages marked as read'))
+          .catch(err => console.error('Error marking group messages as read:', err));
+        }
+      }
+    }
+  }, [selectedGroupChat, user]);
+
+  // Fetch initial unread counts
+  useEffect(() => {
+    if (user?.id) {
+      fetchUnreadCounts();
+    }
+  }, [user]);
+  
+  // Fetch unread message counts
+  const fetchUnreadCounts = async () => {
+    try {
+      console.log('Fetching unread counts for user:', user.id);
+      const response = await axios.get(`http://localhost:5000/api/messages/unread/${user.id}`);
+      console.log('Unread counts response:', response.data);
+      
+      const counts = {};
+      
+      // Process direct message unread counts
+      response.data.directMessages.forEach(item => {
+        counts[item.senderId] = item.count;
+      });
+      
+      // Process group message unread counts
+      response.data.groupMessages.forEach(item => {
+        counts[`group_${item.groupId}`] = item.count;
+      });
+      
+      console.log('Processed unread counts:', counts);
+      setUnreadCounts(counts);
+      
+      // Update document title
+      const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      setTotalUnreadCount(total);
+      
+      if (total > 0) {
+        document.title = `(${total}) Direct Message App`;
+      } else {
+        document.title = 'Direct Message App';
+      }
+    } catch (error) {
+      console.error('Error fetching unread counts:', error);
+    }
+  };
 
   const fetchFriends = async () => {
     try {
@@ -475,7 +679,28 @@ function Dashboard() {
         new Date(a.createdAt) - new Date(b.createdAt)
       );
       
-      setGroupMessages(sortedMessages);
+      setMessages(sortedMessages);
+      
+      // Mark messages as read
+      if (user && user.id) {
+        try {
+          await axios.post(`http://localhost:5000/api/messages/markGroupMessagesAsRead`, {
+            userId: user.id,
+            groupId: groupId
+          });
+          
+          // Update unread counts after marking messages as read
+          setUnreadCounts(prev => ({
+            ...prev,
+            [`group_${groupId}`]: 0
+          }));
+          
+          // Refresh unread counts
+          fetchUnreadCounts();
+        } catch (err) {
+          console.error('Error marking group messages as read:', err);
+        }
+      }
     } catch (error) {
       console.error('Error fetching group messages:', error);
     }
@@ -515,19 +740,35 @@ function Dashboard() {
     e.preventDefault();
     if (!newMessage.trim() && !selectedImage) return;
 
-    const formData = new FormData();
-    formData.append('sender', user.id);
-    formData.append('groupId', selectedGroupChat._id);
-    if (newMessage.trim()) formData.append('content', newMessage);
-    if (selectedImage) formData.append('image', selectedImage);
-
     try {
-      await axios.post('http://localhost:5000/api/messages/group', formData, {
+      console.log('Sending group message to:', selectedGroupChat._id);
+      
+      const formData = new FormData();
+      formData.append('sender', user.id);
+      formData.append('groupId', selectedGroupChat._id);
+      if (newMessage.trim()) formData.append('content', newMessage);
+      if (selectedImage) formData.append('image', selectedImage);
+
+      const response = await axios.post('http://localhost:5000/api/messages/group', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      
+      console.log('Group message sent successfully:', response.data);
+      
+      // Add the new message to the messages array
+      setMessages(prevMessages => [...prevMessages, response.data]);
+      
+      // Clear the input field and selected image
       setNewMessage('');
       setSelectedImage(null);
-      fetchGroupMessages(selectedGroupChat._id);
+      setPreviewImage(null);
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        if (messageContainerRef.current) {
+          messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+        }
+      }, 100);
     } catch (error) {
       console.error('Error sending group message:', error);
     }
@@ -718,7 +959,7 @@ function Dashboard() {
     // Clear notification when modal is opened
     setHasNewRequests(false);
     
-    // Update user's hasNewFriendRequests status in the database
+    // Update user's notification status in the database
     if (hasNewRequests) {
       axios.post('http://localhost:5000/api/users/clear-notifications', {
         userId: user.id
@@ -833,12 +1074,12 @@ function Dashboard() {
 
   // Update your message rendering to include the onMessageDelete prop
   const renderMessages = () => {
-    const messagesToRender = selectedGroupChat ? groupMessages : messages;
-    
-    return messagesToRender.map((message) => (
+    // Use the messages state for both direct and group messages
+    return messages.map((message) => (
       <Message
         key={message._id}
         message={message}
+        currentUser={user}
         onMessageDelete={handleMessageDelete}
       />
     ));
@@ -994,6 +1235,71 @@ function Dashboard() {
     }
   };
 
+  // Render friends list with unread counts
+  const renderFriendsList = () => {
+    return friends.map(friend => (
+      <div
+        key={friend._id}
+        className={`friend-item ${selectedFriend && selectedFriend._id === friend._id ? 'selected' : ''}`}
+        onClick={() => {
+          setSelectedFriend(friend);
+          setSelectedGroupChat(null);
+          setMessages([]);
+          fetchMessages(friend._id);
+        }}
+      >
+        <img
+          src={friend.profileImage || '/default-avatar.png'}
+          alt={friend.username}
+          className="profile-picture"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
+        />
+        <div className="friend-info">
+          <div className="friend-name">{friend.username}</div>
+          {friend.bio && <div className="user-bio">{friend.bio}</div>}
+        </div>
+        {unreadCounts[friend._id] > 0 && (
+          <div className="unread-badge">{unreadCounts[friend._id]}</div>
+        )}
+      </div>
+    ));
+  };
+
+  // Render group chats list with unread counts
+  const renderGroupChatsList = () => {
+    return groupChats.map(group => {
+      const groupKey = `group_${group._id}`;
+      const unreadCount = unreadCounts[groupKey] || 0;
+      
+      console.log(`Group ${group.name} (${groupKey}) has ${unreadCount} unread messages`);
+      
+      return (
+        <div
+          key={group._id}
+          className={`group-chat-item ${selectedGroupChat && selectedGroupChat._id === group._id ? 'selected' : ''}`}
+          onClick={() => {
+            setSelectedGroupChat(group);
+            setSelectedFriend(null);
+            setMessages([]);
+            fetchGroupMessages(group._id);
+          }}
+        >
+          <div className="group-icon">👥</div>
+          <div className="group-info">
+            <div className="group-name">{group.name}</div>
+            <div className="group-members-count">{group.members.length} members</div>
+          </div>
+          {unreadCount > 0 && (
+            <div className="unread-badge">{unreadCount}</div>
+          )}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="dashboard">
       <div className="sidebar">
@@ -1027,36 +1333,7 @@ function Dashboard() {
         </div>
 
         <div className="friends-list">
-          {friends.map(friend => (
-            <div key={friend._id} className="friend-item">
-              <div 
-                className="friend-info"
-                onClick={() => {
-                  setSelectedFriend(friend);
-                  setSelectedGroupChat(null);
-                  setMessages([]);
-                  fetchMessages(friend._id);
-                }}
-              >
-                <img
-                  src={friend.profileImage || '/default-avatar.png'}
-                  alt="Profile"
-                  className="profile-picture"
-                />
-                <span>{friend.username}</span>
-              </div>
-              <button 
-                className="remove-friend-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFriend(friend._id);
-                }}
-                title="Remove Friend"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+          {renderFriendsList()}
         </div>
 
         <div className="section-header">
@@ -1066,23 +1343,7 @@ function Dashboard() {
           </button>
         </div>
         <div className="group-chats-list">
-          {groupChats.map(chat => (
-            <div
-              key={chat._id}
-              className={`chat-item ${selectedGroupChat?._id === chat._id ? 'selected' : ''}`}
-              onClick={() => {
-                setSelectedGroupChat(chat);
-                setSelectedFriend(null);
-                setMessages([]);
-                fetchGroupMessages(chat._id);
-              }}
-            >
-              <div className="chat-item-info">
-                <h4>💬 {chat.name}</h4>
-                <span>{chat.members.length} members</span>
-              </div>
-            </div>
-          ))}
+          {renderGroupChatsList()}
         </div>
 
         <div className="sidebar-footer">

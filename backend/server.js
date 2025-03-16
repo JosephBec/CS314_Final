@@ -28,6 +28,16 @@ io.on('connection', (socket) => {
     console.log('User registered:', userId);
     connectedUsers[userId] = socket.id;
     socket.userId = userId;
+    
+    // Join user's personal room for direct messages
+    socket.join('user_' + userId);
+    console.log(`User ${userId} joined their personal room`);
+  });
+  
+  // User joins a room (for direct messages or group chats)
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`User ${socket.userId} joined room ${roomId}`);
   });
   
   // User starts typing
@@ -88,6 +98,44 @@ io.on('connection', (socket) => {
     console.log(`User ${socket.userId} left group ${groupId}`);
   });
   
+  // Listen for new messages
+  socket.on('sendMessage', async (messageData) => {
+    try {
+      const { senderId, receiverId, content, imageUrl } = messageData;
+      
+      // Emit to the receiver if they're connected
+      const receiverSocketId = connectedUsers[receiverId];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('newMessage', {
+          sender: senderId,
+          content,
+          imageUrl,
+          createdAt: new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Error sending message via socket:', error);
+    }
+  });
+  
+  // Listen for new group messages
+  socket.on('sendGroupMessage', async (messageData) => {
+    try {
+      const { senderId, groupId, content, imageUrl } = messageData;
+      
+      // Emit to all members in the group chat
+      socket.to(groupId).emit('newGroupMessage', {
+        sender: senderId,
+        content,
+        groupId,
+        imageUrl,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error sending group message via socket:', error);
+    }
+  });
+  
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
@@ -112,6 +160,10 @@ const messageRoutes = require('./routes/messages');
 const friendRoutes = require('./routes/friends');
 const userRoutes = require('./routes/users');
 const groupChatRoutes = require('./routes/groupChats');
+const Message = require('./models/Message');
+
+// Set io reference in message routes
+messageRoutes.setIo(io);
 
 // Use routes
 app.use('/api/auth', authRoutes);

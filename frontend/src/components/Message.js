@@ -3,13 +3,34 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import './Message.css';
 
-function Message({ message, onMessageDelete }) {
+function Message({ message, currentUser, onMessageDelete }) {
   const { user } = useAuth();
   const [canUnsend, setCanUnsend] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   
-  const isOwnMessage = message.sender._id === user.id;
+  // Handle both direct messages and group chat messages
+  const isOwnMessage = message.sender && 
+    ((typeof message.sender === 'object' && message.sender._id === user.id) || 
+     (typeof message.sender === 'string' && message.sender === user.id));
+  
   const isRead = message.readBy && message.readBy.length > 0;
+  
+  // Get sender information safely
+  const getSenderInfo = () => {
+    if (!message.sender) return { username: 'Unknown', profileImage: '/default-avatar.png' };
+    
+    if (typeof message.sender === 'object') {
+      return {
+        username: message.sender.username || 'Unknown',
+        profileImage: message.sender.profileImage || '/default-avatar.png'
+      };
+    }
+    
+    // If sender is just an ID (from socket events)
+    return { username: 'User', profileImage: '/default-avatar.png' };
+  };
+  
+  const senderInfo = getSenderInfo();
 
   useEffect(() => {
     if (isOwnMessage) {
@@ -51,7 +72,7 @@ function Message({ message, onMessageDelete }) {
       <div className="message-row">
         {!isOwnMessage && (
           <img 
-            src={message.sender.profileImage || '/default-avatar.png'} 
+            src={senderInfo.profileImage || '/default-avatar.png'} 
             alt="Profile" 
             className="message-profile-pic"
             onError={(e) => {
@@ -61,6 +82,9 @@ function Message({ message, onMessageDelete }) {
           />
         )}
         <div className="message">
+          {!isOwnMessage && message.groupChat && (
+            <div className="sender-name">{senderInfo.username}</div>
+          )}
           <div className="message-content">
             {canUnsend && (
               <button 
@@ -88,7 +112,7 @@ function Message({ message, onMessageDelete }) {
         </div>
         {isOwnMessage && (
           <img 
-            src={message.sender.profileImage || '/default-avatar.png'} 
+            src={senderInfo.profileImage || '/default-avatar.png'} 
             alt="Profile" 
             className="message-profile-pic"
             onError={(e) => {
@@ -99,16 +123,11 @@ function Message({ message, onMessageDelete }) {
         )}
       </div>
       <div className="message-time">
-        {new Date(message.createdAt).toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}
-        {isOwnMessage && isRead && (
-          <span className="read-receipt">Read</span>
-        )}
+        {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {isOwnMessage && isRead && <span className="read-indicator">✓</span>}
       </div>
     </div>
   );
 }
 
-export default Message; 
+export default Message;

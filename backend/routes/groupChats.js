@@ -74,13 +74,21 @@ router.delete('/:groupId/members/:userId', async (req, res) => {
 // Get group chat messages
 router.get('/:groupId/messages', async (req, res) => {
   try {
+    const groupId = req.params.groupId;
+    console.log(`Fetching messages for group: ${groupId}`);
+    
     const messages = await Message.find({
-      groupChat: req.params.groupId
+      groupChat: groupId
     })
     .populate('sender', 'username profileImage')
     .sort({ createdAt: 1 });
+    
+    console.log(`Found ${messages.length} messages for group ${groupId}`);
+    console.log('Messages:', JSON.stringify(messages.slice(0, 2)));
+    
     res.json(messages);
   } catch (error) {
+    console.error('Error fetching group messages:', error);
     res.status(400).json({ error: error.message });
   }
 });
