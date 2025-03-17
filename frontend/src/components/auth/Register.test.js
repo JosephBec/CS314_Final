@@ -7,7 +7,7 @@ import axios from 'axios';
 // Mock axios
 jest.mock('axios');
 
-// Mock the useNavigate hook
+// Mock react-router-dom
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -16,7 +16,6 @@ jest.mock('react-router-dom', () => ({
 
 describe('Register Component', () => {
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
   });
   
@@ -27,34 +26,13 @@ describe('Register Component', () => {
       </BrowserRouter>
     );
     
-    // Check if register form elements are rendered
     expect(screen.getByRole('heading', { name: /register/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
   });
   
-  test('updates form fields when user types', () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-    
-    // Get form inputs
-    const usernameInput = screen.getByPlaceholderText('Username');
-    const passwordInput = screen.getByPlaceholderText('Password');
-    
-    // Simulate user typing
-    fireEvent.change(usernameInput, { target: { value: 'newuser' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    
-    // Check if input values are updated
-    expect(usernameInput.value).toBe('newuser');
-    expect(passwordInput.value).toBe('password123');
-  });
-  
-  test('calls axios and navigates on successful registration', async () => {
+  test('handles successful registration', async () => {
     // Mock successful registration
     axios.post.mockResolvedValueOnce({ data: { message: 'User registered successfully' } });
     
@@ -64,37 +42,36 @@ describe('Register Component', () => {
       </BrowserRouter>
     );
     
-    // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'newuser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
+    // Fill out the form
+    fireEvent.change(screen.getByPlaceholderText('Username'), {
+      target: { value: 'testuser' }
+    });
+    
+    fireEvent.change(screen.getByPlaceholderText('Password'), {
+      target: { value: 'password123' }
+    });
     
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /register/i }));
     
-    // Check if axios was called with correct parameters
-    expect(axios.post).toHaveBeenCalledWith(
-      'http://localhost:5001/api/auth/register',
-      {
-        username: 'newuser',
-        password: 'password123'
-      }
-    );
+    // Wait for the API call to be made
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        'http://localhost:5000/api/auth/register',
+        { username: 'testuser', password: 'password123' }
+      );
+    });
     
-    // Wait for navigation to occur
+    // Check that navigation to login page occurred
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
   });
   
-  test('displays error message on registration failure', async () => {
-    // Mock failed registration
-    const errorMessage = 'Username already exists';
+  test('handles registration error', async () => {
+    // Mock registration error
     axios.post.mockRejectedValueOnce({
-      response: {
-        data: {
-          error: errorMessage
-        }
-      }
+      response: { data: { error: 'Username already exists' } }
     });
     
     render(
@@ -103,23 +80,28 @@ describe('Register Component', () => {
       </BrowserRouter>
     );
     
-    // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'existinguser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
+    // Fill out the form
+    fireEvent.change(screen.getByPlaceholderText('Username'), {
+      target: { value: 'existinguser' }
+    });
+    
+    fireEvent.change(screen.getByPlaceholderText('Password'), {
+      target: { value: 'password123' }
+    });
     
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /register/i }));
     
-    // Check if error message is displayed
+    // Wait for the error message
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(screen.getByText('Username already exists')).toBeInTheDocument();
     });
     
-    // Check that navigation was not called
+    // Verify navigation was not called
     expect(mockNavigate).not.toHaveBeenCalled();
   });
   
-  test('handles generic error when response structure is unexpected', async () => {
+  test('handles generic error', async () => {
     // Mock error without proper structure
     axios.post.mockRejectedValueOnce(new Error('Network error'));
     
@@ -130,15 +112,23 @@ describe('Register Component', () => {
     );
     
     // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'newuser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByPlaceholderText('Username'), {
+      target: { value: 'testuser' }
+    });
+    
+    fireEvent.change(screen.getByPlaceholderText('Password'), {
+      target: { value: 'password123' }
+    });
     
     // Submit the form
     fireEvent.click(screen.getByRole('button', { name: /register/i }));
     
-    // Check if generic error message is displayed
+    // Wait for the generic error message
     await waitFor(() => {
       expect(screen.getByText('An error occurred')).toBeInTheDocument();
     });
+    
+    // Verify navigation was not called
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

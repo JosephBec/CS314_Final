@@ -46,13 +46,15 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Check if message content is displayed
     expect(screen.getByText('Hello, world!')).toBeInTheDocument();
@@ -75,13 +77,15 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Check if message content is displayed
     expect(screen.getByText('Hi there!')).toBeInTheDocument();
@@ -104,13 +108,15 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Check if image is displayed
     const messageImage = screen.getByAltText('Message attachment');
@@ -126,13 +132,15 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Check if unsend button is displayed
     const unsendButton = screen.getByTitle(/Unsend/);
@@ -148,13 +156,15 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Check that unsend button is not displayed
     expect(screen.queryByTitle(/Unsend/)).not.toBeInTheDocument();
@@ -169,17 +179,21 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Click unsend button
     const unsendButton = screen.getByTitle(/Unsend/);
-    fireEvent.click(unsendButton);
+    act(() => {
+      fireEvent.click(unsendButton);
+    });
     
     // Wait for axios.delete to be called
     await act(async () => {
@@ -202,19 +216,23 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Get the message image
     const messageImage = screen.getByAltText('Message attachment');
     
     // Simulate error
-    fireEvent.error(messageImage);
+    act(() => {
+      fireEvent.error(messageImage);
+    });
     
     // Check if the style was updated
     expect(messageImage.style.display).toBe('none');
@@ -229,19 +247,23 @@ describe('Message Component', () => {
       readBy: []
     };
     
-    render(
-      <Message 
-        message={message} 
-        currentUser={mockUser} 
-        onMessageDelete={mockOnMessageDelete} 
-      />
-    );
+    act(() => {
+      render(
+        <Message 
+          message={message} 
+          currentUser={mockUser}
+          onMessageDelete={mockOnMessageDelete} 
+        />
+      );
+    });
     
     // Get the profile image
     const profileImage = screen.getByAltText('Profile');
     
     // Simulate error
-    fireEvent.error(profileImage);
+    act(() => {
+      fireEvent.error(profileImage);
+    });
     
     // Check if the src was updated to default
     expect(profileImage).toHaveAttribute('src', '/default-avatar.png');

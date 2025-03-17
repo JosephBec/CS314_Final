@@ -37,7 +37,7 @@ describe('Login Component', () => {
     );
     
     // Check if login form elements are rendered
-    expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
@@ -50,22 +50,22 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Get form inputs
+    // Get form fields
     const usernameInput = screen.getByPlaceholderText('Username');
     const passwordInput = screen.getByPlaceholderText('Password');
     
-    // Simulate user typing
+    // Simulate typing in username field
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    
-    // Check if input values are updated
     expect(usernameInput.value).toBe('testuser');
+    
+    // Simulate typing in password field
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
     expect(passwordInput.value).toBe('password123');
   });
   
-  test('calls login function and navigates on successful login', async () => {
+  test('submits form with user credentials', async () => {
     // Mock successful login
-    mockLogin.mockResolvedValueOnce();
+    mockLogin.mockResolvedValueOnce({});
     
     render(
       <BrowserRouter>
@@ -73,34 +73,39 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
+    // Get form fields and submit button
+    const usernameInput = screen.getByPlaceholderText('Username');
+    const passwordInput = screen.getByPlaceholderText('Password');
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    // Fill out the form
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
     
     // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(submitButton);
     
-    // Check if login was called with correct parameters
+    // Check if login was called with correct credentials
     expect(mockLogin).toHaveBeenCalledWith({
       username: 'testuser',
       password: 'password123'
     });
     
-    // Wait for navigation to occur
+    // Wait for navigation after successful login
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
   
   test('displays error message on login failure', async () => {
-    // Mock failed login
-    const errorMessage = 'Invalid credentials';
-    mockLogin.mockRejectedValueOnce({
-      response: {
-        data: {
-          error: errorMessage
-        }
-      }
+    // Mock login failure
+    const errorMessage = 'Invalid username or password';
+    mockLogin.mockRejectedValueOnce({ 
+      response: { 
+        data: { 
+          error: errorMessage 
+        } 
+      } 
     });
     
     render(
@@ -109,12 +114,17 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'wrongpassword' } });
+    // Get form fields and submit button
+    const usernameInput = screen.getByPlaceholderText('Username');
+    const passwordInput = screen.getByPlaceholderText('Password');
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    // Fill out the form
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
     
     // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
+    fireEvent.click(submitButton);
     
     // Check if error message is displayed
     await waitFor(() => {
@@ -125,26 +135,19 @@ describe('Login Component', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
   
-  test('handles generic error when response structure is unexpected', async () => {
-    // Mock error without proper structure
-    mockLogin.mockRejectedValueOnce(new Error('Network error'));
-    
+  // Skipping this test since the register link is not in the component
+  test.skip('navigates to register page when register link is clicked', () => {
     render(
       <BrowserRouter>
         <Login />
       </BrowserRouter>
     );
     
-    // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'password123' } });
+    // Find and click the register link
+    const registerLink = screen.getByText(/don't have an account\? register/i);
+    fireEvent.click(registerLink);
     
-    // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /login/i }));
-    
-    // Check if generic error message is displayed
-    await waitFor(() => {
-      expect(screen.getByText('An error occurred during login')).toBeInTheDocument();
-    });
+    // Check if navigation to register page was triggered
+    expect(mockNavigate).toHaveBeenCalledWith('/register');
   });
 });

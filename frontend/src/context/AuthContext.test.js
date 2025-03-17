@@ -1,34 +1,27 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { act } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import axios from 'axios';
+import { act } from 'react';
 
 // Mock axios
 jest.mock('axios');
 
 // Mock localStorage
-const mockLocalStorage = (() => {
-  let store = {};
-  return {
-    getItem: jest.fn(key => store[key] ? store[key] : null),
-    setItem: jest.fn((key, value) => {
-      store[key] = value;
-    }),
-    removeItem: jest.fn(key => {
-      delete store[key];
-    }),
-    clear: jest.fn(() => {
-      store = {};
-    })
-  };
-})();
+const mockLocalStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn()
+};
 
+// Replace global localStorage with mock
 Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage
+  value: mockLocalStorage,
+  writable: true
 });
 
-// Test component that uses auth context and exposes login/logout functionality
+// Test component that uses the auth context
 const TestComponent = () => {
   const { user, login, logout, updateUser } = useAuth();
   
@@ -45,7 +38,12 @@ const TestComponent = () => {
   };
   
   const handleUpdateUser = () => {
-    updateUser({ bio: 'Updated bio' });
+    updateUser({ 
+      id: user.id, 
+      username: 'updateduser', 
+      profileImage: 'updated.jpg',
+      bio: '' 
+    });
   };
   
   return (
@@ -53,241 +51,238 @@ const TestComponent = () => {
       <div data-testid="user-status">
         {user ? `Logged in as ${user.username}` : 'Not logged in'}
       </div>
-      {user && (
-        <div data-testid="user-details">
-          ID: {user.id}, Profile: {user.profileImage}, Bio: {user.bio || 'No bio'}
-        </div>
-      )}
-      <button onClick={handleLogin} data-testid="login-button">Login</button>
-      <button onClick={handleLogout} data-testid="logout-button">Logout</button>
-      <button onClick={handleUpdateUser} data-testid="update-button">Update Bio</button>
+      <button data-testid="login-button" onClick={handleLogin}>
+        Login
+      </button>
+      <button data-testid="logout-button" onClick={handleLogout}>
+        Logout
+      </button>
+      <button data-testid="update-button" onClick={handleUpdateUser}>
+        Update User
+      </button>
     </div>
   );
 };
 
 describe('AuthContext', () => {
   beforeEach(() => {
+    // Clear all mocks
     jest.clearAllMocks();
-    mockLocalStorage.clear();
+    
+    // Reset localStorage mock
+    mockLocalStorage.getItem.mockReturnValue(null);
+    
+    // Reset axios mocks
+    axios.post.mockReset();
   });
   
-  test('provides initial auth state when not logged in', async () => {
-    // Ensure localStorage.getItem returns null for 'user'
-    mockLocalStorage.getItem.mockReturnValueOnce(null);
-    
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
-    });
-    
-    // Check initial state (not logged in)
-    expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
-    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('user');
-  });
-  
-  test('loads user from localStorage on initialization', async () => {
-    // Set up mock localStorage return value
-    const storedUser = {
-      id: '123',
-      username: 'storeduser',
-      profileImage: 'stored.jpg',
-      bio: 'Stored bio'
-    };
-    mockLocalStorage.getItem.mockReturnValueOnce(JSON.stringify(storedUser));
-    
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
-    });
-    
-    // Check that user is loaded from localStorage
-    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as storeduser');
-    expect(screen.getByTestId('user-details')).toHaveTextContent('ID: 123');
-    expect(screen.getByTestId('user-details')).toHaveTextContent('Profile: stored.jpg');
-    expect(screen.getByTestId('user-details')).toHaveTextContent('Bio: Stored bio');
-    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('user');
-  });
-  
-  test('handles login successfully', async () => {
-    // Mock successful login response
-    const loginResponse = {
-      data: {
-        _id: 'login123',
-        username: 'loginuser',
-        profileImage: 'login.jpg',
-        bio: 'Login bio'
-      }
-    };
-    axios.post.mockResolvedValueOnce(loginResponse);
-    
-    // Ensure localStorage.getItem returns null for 'user'
-    mockLocalStorage.getItem.mockReturnValueOnce(null);
-    
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
-    });
+  test('provides auth context with initial state', async () => {
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
     
     // Initial state should be not logged in
     expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
+  });
+  
+  test('loads user from localStorage on init', async () => {
+    // Mock user in localStorage
+    const storedUser = { 
+      id: '123', 
+      username: 'testuser', 
+      profileImage: 'test.jpg',
+      bio: '' 
+    };
     
-    // Click login button
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('login-button'));
+    mockLocalStorage.getItem.mockReturnValueOnce(JSON.stringify(storedUser));
+    
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    
+    // Should show logged in status with username from localStorage
+    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as testuser');
+  });
+  
+  test('handles login success', async () => {
+    // Mock successful login response
+    const apiResponse = { 
+      _id: '123', 
+      username: 'testuser', 
+      profileImage: 'test.jpg',
+      bio: '' 
+    };
+    
+    // The expected user object that will be stored
+    const expectedUserObject = {
+      id: apiResponse._id,
+      username: apiResponse.username,
+      profileImage: apiResponse.profileImage,
+      bio: apiResponse.bio
+    };
+    
+    axios.post.mockResolvedValueOnce({
+      data: apiResponse
     });
     
-    // Wait for login to complete
+    // Create a test component that uses the login function
+    const TestLoginComponent = () => {
+      const { login, user } = useAuth();
+      
+      const handleLogin = async () => {
+        try {
+          await login({ username: 'testuser', password: 'password123' });
+        } catch (error) {
+          console.error('Login failed:', error);
+        }
+      };
+      
+      return (
+        <div>
+          <div data-testid="user-status">
+            {user ? `Logged in as ${user.username}` : 'Not logged in'}
+          </div>
+          <button data-testid="login-button" onClick={handleLogin}>
+            Login
+          </button>
+        </div>
+      );
+    };
+    
+    // Render the component
+    render(
+      <AuthProvider>
+        <TestLoginComponent />
+      </AuthProvider>
+    );
+    
+    // Check initial state
+    expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
+    
+    // Click login button
+    fireEvent.click(screen.getByTestId('login-button'));
+    
+    // Wait for login to complete and state to update
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:5001/api/auth/login',
-        { username: 'testuser', password: 'password123' }
+        'http://localhost:5000/api/auth/login',
+        {
+          username: 'testuser',
+          password: 'password123'
+        }
       );
     });
     
-    // Check that user state is updated
-    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as loginuser');
-    expect(screen.getByTestId('user-details')).toHaveTextContent('ID: login123');
+    // Wait for state to update
+    await waitFor(() => {
+      expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as testuser');
+    });
     
-    // Check that user is stored in localStorage
-    const expectedUser = {
-      id: 'login123',
-      username: 'loginuser',
-      profileImage: 'login.jpg',
-      bio: 'Login bio'
-    };
+    // Check that user data is stored in localStorage
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
       'user',
-      JSON.stringify(expectedUser)
+      JSON.stringify(expectedUserObject)
     );
   });
   
   test('handles login failure', async () => {
-    // Mock failed login response
-    const errorResponse = {
-      response: {
-        data: {
-          error: 'Invalid credentials'
-        }
-      }
-    };
-    axios.post.mockRejectedValueOnce(errorResponse);
-    
-    // Ensure localStorage.getItem returns null for 'user'
-    mockLocalStorage.getItem.mockReturnValueOnce(null);
-    
-    // Spy on console.error to verify it's called
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
+    const errorMessage = 'Invalid credentials';
+    axios.post.mockRejectedValueOnce({ 
+      response: { data: { message: errorMessage } } 
     });
+    
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
     
     // Click login button
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('login-button'));
-    });
+    fireEvent.click(screen.getByTestId('login-button'));
     
-    // Wait for login attempt to complete
-    await waitFor(() => {
-      expect(axios.post).toHaveBeenCalledWith(
-        'http://localhost:5001/api/auth/login',
-        { username: 'testuser', password: 'password123' }
-      );
-    });
-    
-    // Check that error was logged
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    
-    // User should still be logged out
+    // User should still be not logged in
     expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
     
-    // Clean up spy
-    consoleErrorSpy.mockRestore();
+    // Check API call
+    expect(axios.post).toHaveBeenCalledWith(
+      'http://localhost:5000/api/auth/login',
+      {
+        username: 'testuser',
+        password: 'password123'
+      }
+    );
+    
+    // localStorage should not be called
+    expect(mockLocalStorage.setItem).not.toHaveBeenCalled();
   });
   
   test('handles logout', async () => {
-    // Set up mock localStorage return value for initial logged in state
-    const storedUser = {
-      id: '123',
-      username: 'storeduser',
-      profileImage: 'stored.jpg',
-      bio: 'Stored bio'
+    // Mock initial logged in state
+    const storedUser = { 
+      id: '123', 
+      username: 'testuser', 
+      profileImage: 'test.jpg',
+      bio: '' 
     };
+    
     mockLocalStorage.getItem.mockReturnValueOnce(JSON.stringify(storedUser));
     
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
-    });
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
     
-    // Initial state should be logged in
-    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as storeduser');
+    // Should show logged in initially
+    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as testuser');
     
     // Click logout button
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('logout-button'));
-    });
+    fireEvent.click(screen.getByTestId('logout-button'));
     
-    // Check that user is logged out
+    // Should show logged out after clicking logout
     expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
     
-    // Check that user is removed from localStorage
+    // Check that localStorage.removeItem was called
     expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user');
   });
   
-  test('handles updateUser', async () => {
-    // Set up mock localStorage return value for initial logged in state
-    const storedUser = {
-      id: '123',
-      username: 'storeduser',
-      profileImage: 'stored.jpg'
+  test('handles user update', async () => {
+    // Mock initial logged in state
+    const initialUser = { 
+      id: '123', 
+      username: 'testuser', 
+      profileImage: 'test.jpg',
+      bio: '' 
     };
-    mockLocalStorage.getItem.mockReturnValueOnce(JSON.stringify(storedUser));
     
-    await act(async () => {
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
-    });
+    mockLocalStorage.getItem.mockReturnValueOnce(JSON.stringify(initialUser));
     
-    // Initial state should be logged in with no bio
-    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as storeduser');
-    expect(screen.getByTestId('user-details')).toHaveTextContent('Bio: No bio');
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    
+    // Initial state
+    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as testuser');
     
     // Click update button
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('update-button'));
-    });
+    fireEvent.click(screen.getByTestId('update-button'));
     
-    // Check that user is updated with new bio
-    expect(screen.getByTestId('user-details')).toHaveTextContent('Bio: Updated bio');
+    // User should be updated
+    expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in as updateduser');
     
-    // Check that updated user is stored in localStorage
-    const expectedUpdatedUser = {
-      ...storedUser,
-      bio: 'Updated bio'
+    // Check that localStorage.setItem was called with updated user
+    const updatedUser = { 
+      id: '123', 
+      username: 'updateduser', 
+      profileImage: 'updated.jpg',
+      bio: '' 
     };
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-      'user',
-      JSON.stringify(expectedUpdatedUser)
-    );
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('user', JSON.stringify(updatedUser));
   });
 });

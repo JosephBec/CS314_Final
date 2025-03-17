@@ -1,0 +1,241 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { SocketProvider, useSocket } from './SocketContext';
+import { useAuth } from './AuthContext';
+import { io } from 'socket.io-client';
+
+// Mock socket.io-client
+jest.mock('socket.io-client');
+
+// Mock AuthContext
+jest.mock('./AuthContext');
+
+// Create a mock socket
+const mockSocket = {
+  on: jest.fn((event, callback) => {
+    // Store callbacks for manual triggering in tests
+    if (event === 'connect') {
+      mockCallbacks.connect = callback;
+    } else if (event === 'disconnect') {
+      mockCallbacks.disconnect = callback;
+    }
+    return mockSocket;
+  }),
+  emit: jest.fn(),
+  off: jest.fn(),
+  disconnect: jest.fn(),
+  connected: true
+};
+
+// Store mock callbacks
+const mockCallbacks = {
+  connect: null,
+  disconnect: null
+};
+
+// Mock io function to return the mock socket
+io.mockReturnValue(mockSocket);
+
+// Test component that uses the socket context
+const TestComponent = () => {
+  const { socket, isConnected } = useSocket();
+  
+  return (
+    <div>
+      <div data-testid="connection-status">
+        {isConnected ? 'Connected' : 'Disconnected'}
+      </div>
+      <div data-testid="socket-status">
+        {socket ? 'Socket initialized' : 'No socket'}
+      </div>
+    </div>
+  );
+};
+
+describe('SocketContext', () => {
+  beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
+    
+    // Default auth state (not logged in)
+    useAuth.mockReturnValue({
+      user: null
+    });
+    
+    // Reset callbacks
+    Object.keys(mockCallbacks).forEach(key => {
+      mockCallbacks[key] = null;
+    });
+    
+    // Spy on console.log
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+  
+  afterEach(() => {
+    console.log.mockRestore();
+  });
+  
+  test('provides socket context', () => {
+    // Mock authenticated user
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Check if socket is initialized
+    expect(screen.getByTestId('socket-status')).toHaveTextContent('Socket initialized');
+    expect(io).toHaveBeenCalledWith('http://localhost:5000', expect.any(Object));
+  });
+  
+  test('connects to socket server', () => {
+    // Mock authenticated user
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Simulate socket connection
+    if (mockCallbacks.connect) {
+      mockCallbacks.connect();
+    }
+    
+    // Check if connection status is updated
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Connected');
+  });
+  
+  test('disconnects from socket server', () => {
+    // Mock authenticated user
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Simulate socket connection and then disconnection
+    if (mockCallbacks.connect) {
+      mockCallbacks.connect();
+    }
+    
+    if (mockCallbacks.disconnect) {
+      mockCallbacks.disconnect();
+    }
+    
+    // Check if connection status is updated
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Disconnected');
+  });
+  
+  test('registers user when user logs in after socket is connected', () => {
+    // Start with no user
+    useAuth.mockReturnValue({
+      user: null
+    });
+    
+    const { rerender } = render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Update auth context to return a user (simulating login)
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    // Force re-render with the new user
+    rerender(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Simulate socket connection
+    if (mockCallbacks.connect) {
+      mockCallbacks.connect();
+    }
+    
+    // Check if socket emits 'register' event with user ID after login
+    expect(mockSocket.emit).toHaveBeenCalledWith('register', 'user123');
+  });
+  
+  test('handles socket connection event', () => {
+    // Mock authenticated user
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Simulate socket connection
+    if (mockCallbacks.connect) {
+      mockCallbacks.connect();
+    }
+    
+    // Check if connection status is updated
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Connected');
+    expect(console.log).toHaveBeenCalledWith('Socket connected');
+  });
+  
+  test('handles socket disconnection event', () => {
+    // Mock authenticated user
+    useAuth.mockReturnValue({
+      user: { id: 'user123' }
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Simulate socket connection and then disconnection
+    if (mockCallbacks.connect) {
+      mockCallbacks.connect();
+    }
+    
+    if (mockCallbacks.disconnect) {
+      mockCallbacks.disconnect();
+    }
+    
+    // Check if connection status is updated
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Disconnected');
+    expect(console.log).toHaveBeenCalledWith('Socket disconnected');
+  });
+  
+  test('does not connect to socket when user is not authenticated', () => {
+    // Set up auth with no user
+    useAuth.mockReturnValue({
+      user: null
+    });
+    
+    render(
+      <SocketProvider>
+        <TestComponent />
+      </SocketProvider>
+    );
+    
+    // Socket should not be initialized
+    expect(screen.getByTestId('socket-status')).toHaveTextContent('No socket');
+    expect(screen.getByTestId('connection-status')).toHaveTextContent('Disconnected');
+    
+    // Check that register was not called since socket is not connected
+    expect(mockSocket.emit).not.toHaveBeenCalledWith('register', expect.any(Object));
+  });
+});

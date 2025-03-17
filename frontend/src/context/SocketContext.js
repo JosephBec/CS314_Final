@@ -10,37 +10,42 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Initialize socket connection
-    const newSocket = io('http://localhost:5000');
-    setSocket(newSocket);
+    // Only initialize socket if user is authenticated
+    if (user && user.id) {
+      // Initialize socket connection with user ID in query params
+      const newSocket = io('http://localhost:5000', {
+        query: { userId: user.id }
+      });
+      setSocket(newSocket);
 
-    // Set up event listeners
-    newSocket.on('connect', () => {
-      // Only log in development environment
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Socket connected');
-      }
-      setIsConnected(true);
-      
-      // Register user if logged in
-      if (user && user.id) {
+      // Set up event listeners
+      newSocket.on('connect', () => {
+        // Only log in development environment
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Socket connected');
+        }
+        setIsConnected(true);
+        
+        // Register user if logged in
         newSocket.emit('register', user.id);
-      }
-    });
+      });
 
-    newSocket.on('disconnect', () => {
-      // Only log in development environment
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Socket disconnected');
-      }
-      setIsConnected(false);
-    });
+      newSocket.on('disconnect', () => {
+        // Only log in development environment
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Socket disconnected');
+        }
+        setIsConnected(false);
+      });
 
-    // Clean up on unmount
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
+      // Clean up on unmount
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+    
+    return () => {}; // Return empty cleanup function if no user
+  }, [user]);
 
   // Register user ID when user logs in
   useEffect(() => {
