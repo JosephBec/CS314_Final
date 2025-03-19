@@ -157,37 +157,6 @@ router.put('/:userId/bio', async (req, res) => {
   }
 });
 
-// Update user names
-router.put('/:userId/names', async (req, res) => {
-  try {
-    const { firstName, lastName } = req.body;
-    const userId = req.params.userId;
-    
-    if (firstName === undefined || lastName === undefined) {
-      return res.status(400).json({ error: 'First name and last name are required' });
-    }
-    
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { firstName, lastName },
-      { new: true }
-    ).select('-password');
-    
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    res.json({
-      user: updatedUser,
-      message: 'Names updated successfully'
-    });
-    
-  } catch (error) {
-    console.error('Error updating names:', error.message);
-    res.status(500).json({ error: 'Failed to update names' });
-  }
-});
-
 // Clear friend request notifications
 router.post('/clear-notifications', async (req, res) => {
   try {

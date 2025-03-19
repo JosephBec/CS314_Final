@@ -9,18 +9,12 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, password } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
-    }
-
-    // Check if email already exists
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).json({ error: 'Email already exists' });
     }
 
     // Hash the password
@@ -30,10 +24,7 @@ router.post('/register', async (req, res) => {
     // Create new user with hashed password
     const user = new User({
       username,
-      email,
-      password: hashedPassword,
-      firstName: firstName || '',
-      lastName: lastName || ''
+      password: hashedPassword
     });
 
     await user.save();
@@ -41,9 +32,6 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       _id: user._id,
       username: user.username,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
       bio: user.bio || ''
     });
 
@@ -78,9 +66,6 @@ router.post('/login', async (req, res) => {
     const userResponse = {
       _id: user._id,
       username: user.username,
-      email: user.email,
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
       profileImage: user.profileImage || '',
       bio: user.bio || ''
     };
