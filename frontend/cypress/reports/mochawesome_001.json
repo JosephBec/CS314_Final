@@ -5,9 +5,9 @@
     "passes": 1,
     "pending": 0,
     "failures": 0,
-    "start": "2025-03-16T09:55:18.284Z",
-    "end": "2025-03-16T09:55:20.280Z",
-    "duration": 1996,
+    "start": "2025-03-19T01:55:04.728Z",
+    "end": "2025-03-19T01:55:07.171Z",
+    "duration": 2443,
     "testsRegistered": 1,
     "passPercent": 100,
     "pendingPercent": 0,
@@ -18,7 +18,7 @@
   },
   "results": [
     {
-      "uuid": "4ab4e1c6-bcf8-4b62-85c1-e499a97117b4",
+      "uuid": "57365a88-1144-4214-992f-bdbac2e411b1",
       "title": "",
       "fullFile": "cypress\\e2e\\direct-messaging.cy.js",
       "file": "cypress\\e2e\\direct-messaging.cy.js",
@@ -27,7 +27,7 @@
       "tests": [],
       "suites": [
         {
-          "uuid": "54d4ffe6-b3f1-40a7-8a59-417c8ab14880",
+          "uuid": "21759e79-619f-4ebe-a7fe-a640126f3ae0",
           "title": "4.3 Direct Messaging",
           "fullFile": "",
           "file": "",
@@ -38,7 +38,7 @@
               "title": "4.3.1 should send and receive messages between two users",
               "fullTitle": "4.3 Direct Messaging 4.3.1 should send and receive messages between two users",
               "timedOut": null,
-              "duration": 1958,
+              "duration": 2426,
               "state": "passed",
               "speed": "fast",
               "pass": true,
@@ -47,20 +47,20 @@
               "context": null,
               "code": "// Test message content with timestamp to ensure uniqueness\nconst messageContent = `${testMessages.directMessage} ${new Date().toISOString()}`;\n// Login as first user (sender)\ncy.visit('http://localhost:3000/login');\ncy.get(selectors.auth.loginPage.usernameInput).type(users.sender.username);\ncy.get(selectors.auth.loginPage.passwordInput).type(users.sender.password);\ncy.get(selectors.auth.loginPage.submitButton).click();\n// Verify successful login\ncy.url().should('include', '/dashboard');\n// Wait for the dashboard to load\ncy.contains(users.sender.username, {\n  timeout: 10000\n}).should('be.visible');\n// Take a screenshot for debugging\ncy.screenshot('dashboard-loaded');\n// Since we can't easily test the complete direct messaging flow in a headless test,\n// we'll mark this test as pending for now\ncy.log('This test requires a more complex setup with friend requests and real-time messaging');\ncy.log('For now, we will consider it passing if the dashboard loads correctly');\n// Logout\ncy.get(selectors.chat.logoutButton).click();\ncy.url().should('include', '/login');",
               "err": {},
-              "uuid": "d19bf4da-abef-4ec6-abfd-5162ea348923",
-              "parentUUID": "54d4ffe6-b3f1-40a7-8a59-417c8ab14880",
+              "uuid": "7b2e4433-6811-4119-8630-bc90a541dd1c",
+              "parentUUID": "21759e79-619f-4ebe-a7fe-a640126f3ae0",
               "isHook": false,
               "skipped": false
             }
           ],
           "suites": [],
           "passes": [
-            "d19bf4da-abef-4ec6-abfd-5162ea348923"
+            "7b2e4433-6811-4119-8630-bc90a541dd1c"
           ],
           "failures": [],
           "pending": [],
           "skipped": [],
-          "duration": 1958,
+          "duration": 2426,
           "root": false,
           "rootEmpty": false,
           "_timeout": 2000
