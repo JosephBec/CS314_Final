@@ -13,16 +13,21 @@ function Settings({ onClose }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [bio, setBio] = useState(user?.bio || '');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
   const [isSavingBio, setIsSavingBio] = useState(false);
+  const [isSavingNames, setIsSavingNames] = useState(false);
   const [charCount, setCharCount] = useState(bio.length);
 
-  // Fetch user data to get the latest bio
+  // Fetch user data to get the latest bio and names
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         if (user && user.id) {
           const response = await axios.get(`http://localhost:5000/api/users/${user.id}`);
           setBio(response.data.bio || '');
+          setFirstName(response.data.firstName || '');
+          setLastName(response.data.lastName || '');
           setCharCount(response.data.bio ? response.data.bio.length : 0);
         }
       } catch (error) {
@@ -93,6 +98,14 @@ function Settings({ onClose }) {
     }
   };
 
+  const handleFirstNameChange = (e) => {
+    setFirstName(e.target.value);
+  };
+
+  const handleLastNameChange = (e) => {
+    setLastName(e.target.value);
+  };
+
   const saveBio = async () => {
     setIsSavingBio(true);
     setError('');
@@ -120,6 +133,37 @@ function Settings({ onClose }) {
       setError('Error updating bio: ' + (error.response?.data?.error || error.message));
     } finally {
       setIsSavingBio(false);
+    }
+  };
+
+  const saveNames = async () => {
+    setIsSavingNames(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/users/${user.id}/names`,
+        { firstName, lastName },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const updatedUser = {
+        ...user,
+        firstName: response.data.user.firstName,
+        lastName: response.data.user.lastName
+      };
+      
+      updateUser(updatedUser);
+      setSuccess('Name updated successfully!');
+    } catch (error) {
+      setError('Error updating name: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsSavingNames(false);
     }
   };
 
@@ -219,6 +263,33 @@ function Settings({ onClose }) {
             className="save-bio-button"
           >
             {isSavingBio ? 'Saving...' : 'Save Bio'}
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Profile Names</h3>
+        <div className="names-section">
+          <input
+            type="text"
+            value={firstName}
+            onChange={handleFirstNameChange}
+            placeholder="First Name"
+            className="first-name-input"
+          />
+          <input
+            type="text"
+            value={lastName}
+            onChange={handleLastNameChange}
+            placeholder="Last Name"
+            className="last-name-input"
+          />
+          <button 
+            onClick={saveNames} 
+            disabled={isSavingNames}
+            className="save-names-button"
+          >
+            {isSavingNames ? 'Saving...' : 'Save Names'}
           </button>
         </div>
       </div>

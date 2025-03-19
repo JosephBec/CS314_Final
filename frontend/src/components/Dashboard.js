@@ -314,7 +314,13 @@ function Dashboard() {
   const fetchFriends = async () => {
     try {
       const response = await axios.get(`http://localhost:5000/api/friends/${user?.id}`);
-      setFriends(response.data);
+      // Make sure we have all the required fields for each friend
+      const friendsWithNames = response.data.map(friend => ({
+        ...friend,
+        firstName: friend.firstName || '',
+        lastName: friend.lastName || ''
+      }));
+      setFriends(friendsWithNames);
     } catch (error) {
       console.error('Error fetching friends:', error);
     }
@@ -783,23 +789,53 @@ function Dashboard() {
     }
   };
 
+  const renderGroupMembers = (members) => {
+    return (
+      <div className="group-members-list">
+        <h4>Members</h4>
+        <ul>
+          {members.map(member => (
+            <li key={member._id} className="group-member">
+              <img 
+                src={member.profileImage || '/default-avatar.png'} 
+                alt={member.username} 
+                className="member-avatar"
+              />
+              <div className="member-info">
+                <span className="member-name">
+                  {member.firstName || member.lastName ? 
+                    `${member.firstName} ${member.lastName}` : 
+                    member.username}
+                </span>
+                <span className="member-username">@{member.username}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   // Update the chat area JSX to handle both direct and group messages
   const renderChatHeader = () => {
     if (selectedFriend) {
       return (
         <>
-          <div className="chat-header-info">
-            <img
-              src={selectedFriend.profileImage || '/default-avatar.png'}
-              alt="Profile"
-              className="profile-picture"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/default-avatar.png';
-              }}
-            />
+          <div className="chat-header-user">
+            <div className="chat-header-avatar">
+              <img 
+                src={selectedFriend.profileImage || '/default-avatar.png'} 
+                alt={selectedFriend.username}
+                className="chat-header-profile-image"
+              />
+            </div>
             <div className="chat-header-user-info">
-              <h3>{selectedFriend.username}</h3>
+              <h3>
+                {selectedFriend.firstName || selectedFriend.lastName ? 
+                  `${selectedFriend.firstName} ${selectedFriend.lastName}` : 
+                  selectedFriend.username}
+              </h3>
+              <p className="chat-header-username">@{selectedFriend.username}</p>
               {selectedFriend.bio && <p className="chat-header-bio">{selectedFriend.bio}</p>}
             </div>
           </div>
@@ -809,7 +845,7 @@ function Dashboard() {
               onClick={() => removeFriend(selectedFriend._id)}
               title="Remove Friend"
             >
-              Remove Friend
+              ×
             </button>
           </div>
         </>
@@ -843,6 +879,7 @@ function Dashboard() {
                 </button>
               </div>
             </div>
+            {renderGroupMembers(selectedGroupChat.members)}
           </div>
         </div>
       );
@@ -951,16 +988,10 @@ function Dashboard() {
     }
   };
 
-  // Update the friend requests button click handler
   const handleAddFriend = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/friends/request', {
-        userId: user.id,
-        friendUsername: newFriendUsername
-      });
-      setNewFriendUsername('');
-      setShowAddFriend(false);
+      await addFriend(e);
     } catch (error) {
       console.error('Error sending friend request:', error);
     }
@@ -1222,41 +1253,101 @@ function Dashboard() {
     }
   };
 
-  // Render friends list with unread counts
   const renderFriendsList = () => {
-    return friends.map(friend => (
-      <div
-        key={friend._id}
-        className={`friend-item ${selectedFriend && selectedFriend._id === friend._id ? 'selected' : ''}`}
-        onClick={() => {
-          setSelectedFriend(friend);
-          setSelectedGroupChat(null);
-          setMessages([]);
-          fetchMessages(friend._id);
-        }}
-        data-testid="friend-item"
-      >
-        <img
-          src={friend.profileImage || '/default-avatar.png'}
-          alt={friend.username}
-          className="profile-picture"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/default-avatar.png';
-          }}
-        />
-        <div className="friend-info">
-          <div className="friend-name">{friend.username}</div>
-          {friend.bio && <div className="user-bio">{friend.bio}</div>}
+    return (
+      <div className="friends-list">
+        <div className="friends-header">
+          <h3>Friends ({friends.length})</h3>
+          <button 
+            className="add-friend-button"
+            style={{
+              backgroundColor: '#333',
+              color: '#fff'
+            }}
+            onClick={() => {
+              setShowFriendsModal(true);
+              setActiveTab('add');
+              
+              // Clear notification when modal is opened
+              if (hasNewRequests) {
+                setHasNewRequests(false);
+                
+                // Update user's notification status in the database
+                axios.post('http://localhost:5000/api/users/clear-notifications', {
+                  userId: user.id
+                }).catch(error => {
+                  console.error('Error clearing notifications:', error);
+                });
+              }
+            }}
+            data-testid="add-friend-button"
+          >
+            <span style={{color: '#fff'}}>+</span>
+            {hasNewRequests && <div className="add-friend-notification"></div>}
+          </button>
         </div>
-        {unreadCounts[friend._id] > 0 && (
-          <div className="unread-badge">{unreadCounts[friend._id]}</div>
+        {friends.length === 0 ? (
+          <div className="no-friends-message">
+            <p>You don't have any friends yet.</p>
+            <p>Click "Add Friend" to get started!</p>
+          </div>
+        ) : (
+          <ul>
+            {friends.map(friend => (
+              <li 
+                key={friend._id} 
+                className={`friend-item ${selectedFriend && selectedFriend._id === friend._id ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedFriend(friend);
+                  setSelectedGroupChat(null);
+                  setMessages([]);
+                  fetchMessages(friend._id);
+                }}
+                data-testid={`friend-${friend._id}`}
+              >
+                <div className="friend-avatar">
+                  <img 
+                    src={friend.profileImage || '/default-avatar.png'} 
+                    alt={friend.username}
+                    className="friend-profile-image"
+                  />
+                  {typingUsers[friend._id] && (
+                    <div className="typing-indicator">
+                      <span>typing...</span>
+                    </div>
+                  )}
+                </div>
+                <div className="friend-info">
+                  <div className="friend-name">
+                    {friend.firstName || friend.lastName ? 
+                      `${friend.firstName} ${friend.lastName}` : 
+                      friend.username}
+                  </div>
+                  <div className="friend-username">@{friend.username}</div>
+                </div>
+                {unreadCounts[friend._id] > 0 && (
+                  <div className="unread-badge">
+                    {unreadCounts[friend._id]}
+                  </div>
+                )}
+                <button
+                  className="remove-friend-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFriend(friend._id);
+                  }}
+                  title="Remove Friend"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-    ));
+    );
   };
 
-  // Render group chats list with unread counts
   const renderGroupChatsList = () => {
     return groupChats.map(group => {
       const groupKey = `group_${group._id}`;
@@ -1286,6 +1377,43 @@ function Dashboard() {
     });
   };
 
+  const renderFriendRequests = () => {
+    return (
+      <div className="friend-requests-list">
+        {friendRequests.length > 0 ? (
+          friendRequests.map(request => (
+            <div key={request._id} className="friend-request">
+              <div className="friend-request-info">
+                <span className="friend-request-name">
+                  {request.firstName || request.lastName ? 
+                    `${request.firstName} ${request.lastName}` : 
+                    request.username}
+                </span>
+                <span className="friend-request-username">@{request.username}</span>
+              </div>
+              <div className="friend-request-buttons">
+                <button 
+                  className="accept"
+                  onClick={() => acceptFriendRequest(request._id)}
+                >
+                  Accept
+                </button>
+                <button 
+                  className="reject"
+                  onClick={() => rejectFriendRequest(request._id)}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="no-requests">No pending friend requests</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="dashboard">
       <div className="sidebar">
@@ -1301,7 +1429,12 @@ function Dashboard() {
               }}
             />
             <div className="user-details">
-              <h2>{user?.username}</h2>
+              <h2>
+                {user?.firstName || user?.lastName ? 
+                  `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : 
+                  user?.username}
+              </h2>
+              <p className="user-username">@{user?.username}</p>
               {user?.bio && <p className="user-bio">{user.bio}</p>}
             </div>
           </div>
@@ -1310,17 +1443,35 @@ function Dashboard() {
         <div className="section-header">
           <h3>Friends ({friends.length})</h3>
           <button 
-            className={`friend-requests-button ${hasNewRequests ? 'has-notifications' : ''}`}
-            onClick={handleOpenFriendsModal}
-            title="Friend Requests"
+            className="add-friend-button"
+            style={{
+              backgroundColor: '#333',
+              color: '#fff'
+            }}
+            onClick={() => {
+              setShowFriendsModal(true);
+              setActiveTab('add');
+              
+              // Clear notification when modal is opened
+              if (hasNewRequests) {
+                setHasNewRequests(false);
+                
+                // Update user's notification status in the database
+                axios.post('http://localhost:5000/api/users/clear-notifications', {
+                  userId: user.id
+                }).catch(error => {
+                  console.error('Error clearing notifications:', error);
+                });
+              }
+            }}
+            data-testid="add-friend-button"
           >
-            👥 {hasNewRequests && <span className="notification-badge">•</span>}
+            <span style={{color: '#fff'}}>+</span>
+            {hasNewRequests && <div className="add-friend-notification"></div>}
           </button>
         </div>
 
-        <div className="friends-list">
-          {renderFriendsList()}
-        </div>
+        {renderFriendsList()}
 
         <div className="section-header">
           <h3>Group Chats</h3>
@@ -1355,7 +1506,11 @@ function Dashboard() {
       </div>
 
       {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
+        <div className="modal">
+          <div className="modal-content">
+            <Settings onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
       )}
 
       {showCreateGroup && (
@@ -1383,7 +1538,14 @@ function Dashboard() {
                         }
                       }}
                     />
-                    {friend.username}
+                    <div className="member-option-info">
+                      <span className="member-option-name">
+                        {friend.firstName || friend.lastName ? 
+                          `${friend.firstName} ${friend.lastName}` : 
+                          friend.username}
+                      </span>
+                      <span className="member-option-username">@{friend.username}</span>
+                    </div>
                   </label>
                 ))}
               </div>
@@ -1415,7 +1577,14 @@ function Dashboard() {
                         }
                       }}
                     />
-                    {friend.username}
+                    <div className="member-option-info">
+                      <span className="member-option-name">
+                        {friend.firstName || friend.lastName ? 
+                          `${friend.firstName} ${friend.lastName}` : 
+                          friend.username}
+                      </span>
+                      <span className="member-option-username">@{friend.username}</span>
+                    </div>
                   </label>
                 ))}
               </div>
@@ -1455,33 +1624,9 @@ function Dashboard() {
             </div>
 
             {activeTab === 'requests' ? (
-              <div className="friend-requests-list">
-                {friendRequests.length > 0 ? (
-                  friendRequests.map(request => (
-                    <div key={request._id} className="friend-request">
-                      <span>{request.username}</span>
-                      <div className="friend-request-buttons">
-                        <button 
-                          className="accept"
-                          onClick={() => acceptFriendRequest(request._id)}
-                        >
-                          Accept
-                        </button>
-                        <button 
-                          className="reject"
-                          onClick={() => rejectFriendRequest(request._id)}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="no-requests">No pending friend requests</div>
-                )}
-              </div>
+              renderFriendRequests()
             ) : (
-              <form onSubmit={handleAddFriend}>
+              <form onSubmit={addFriend}>
                 <input
                   type="text"
                   placeholder="Friend's username"
@@ -1492,6 +1637,7 @@ function Dashboard() {
                 <button type="submit" className="add-friend-submit">
                   Send Request
                 </button>
+                {error && <div className="error-message">{error}</div>}
               </form>
             )}
 
@@ -1556,4 +1702,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard; 
+export default Dashboard;

@@ -34,6 +34,11 @@ We have successfully increased the test coverage for the Dashboard.js component 
    - Tests for socket typing event
    - Tests for socket group message event
 
+5. **NameDisplay.test.js**
+   - Tests the name display logic used throughout the application to ensure proper handling of first and last names.
+   - Tests various scenarios like displaying both first and last names, only first name, only last name, and falling back to username when names are missing.
+   - Verifies the component rendering with the correct name format.
+
 ## Areas Still Needing Coverage
 
 Based on the coverage report, the following areas still need additional testing:

@@ -1,8 +1,5 @@
 .settings-container {
   position: relative;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 25px;
   max-width: 500px;
   margin: 0 auto;
@@ -80,6 +77,42 @@
 .upload-button:disabled, 
 .save-bio-button:disabled {
   background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.names-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.first-name-input,
+.last-name-input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.save-names-button {
+  padding: 8px 16px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  align-self: flex-start;
+}
+
+.save-names-button:hover {
+  background-color: #357ab8;
+}
+
+.save-names-button:disabled {
+  background-color: #a0c4e8;
   cursor: not-allowed;
 }
 
