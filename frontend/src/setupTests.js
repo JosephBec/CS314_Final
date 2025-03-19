@@ -25,11 +25,15 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
-// Suppress console errors and warnings during tests
-global.console = {
-  ...console,
-  // Uncomment to suppress specific console methods during tests
-  // error: jest.fn(),
-  // warn: jest.fn(),
-  // log: jest.fn(),
+// Suppress act() warnings completely
+const originalError = console.error;
+console.error = (...args) => {
+  if (
+    /Warning.*not wrapped in act/.test(args[0]) ||
+    /Warning.*act\(\.\.\.\)/.test(args[0]) ||
+    /Warning.*React\.act/.test(args[0])
+  ) {
+    return;
+  }
+  originalError(...args);
 };

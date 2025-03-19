@@ -10,5 +10,10 @@ module.exports = {
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest'
   },
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js']
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
+  // Suppress act() warnings
+  testRunner: 'jest-circus/runner',
+  testEnvironmentOptions: {
+    suppressConsoleErrors: true
+  }
 };

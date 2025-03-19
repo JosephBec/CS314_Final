@@ -831,6 +831,7 @@ function Dashboard() {
                     setShowAddMembers(true);
                   }}
                   className="add-members-button"
+                  data-testid="add-members-button"
                 >
                   Add Members
                 </button>
@@ -1186,7 +1187,7 @@ function Dashboard() {
               </div>
             )}
           </div>
-          <form onSubmit={handleSendMessage} className="message-form">
+          <form onSubmit={handleSendMessage} className="message-form" data-testid="message-form">
             <input
               type="text"
               value={newMessage}
@@ -1205,6 +1206,7 @@ function Dashboard() {
                 onChange={handleImageSelect}
                 className="image-upload"
                 id="image-upload"
+                data-testid="image-upload"
               />
             </label>
             <button type="submit">Send</button>
@@ -1232,6 +1234,7 @@ function Dashboard() {
           setMessages([]);
           fetchMessages(friend._id);
         }}
+        data-testid="friend-item"
       >
         <img
           src={friend.profileImage || '/default-avatar.png'}
