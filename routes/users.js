@@ -69,6 +69,70 @@ router.post('/:userId/profile-image', upload.single('profileImage'), async (req,
   }
 });
 
+// Update user profile information
+router.put('/:userId/profile', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { firstName, lastName } = req.body;
+
+    console.log('Updating user profile:', { userId, firstName, lastName });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { firstName, lastName },
+      { new: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      console.log('User not found:', userId);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('User updated successfully:', updatedUser);
+
+    res.json({
+      user: updatedUser,
+      message: 'Profile information updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Failed to update profile information' });
+  }
+});
+
+// Update user profile information
+router.post('/:userId/update-profile', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { firstName, lastName } = req.body;
+
+    console.log('Updating user profile:', { userId, firstName, lastName });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { firstName, lastName },
+      { new: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      console.log('User not found:', userId);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('User updated successfully:', updatedUser);
+
+    res.json({
+      user: updatedUser,
+      message: 'Profile information updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Failed to update profile information' });
+  }
+});
+
 // Delete user account
 router.delete('/:userId', async (req, res) => {
   try {
@@ -137,4 +201,4 @@ router.post('/clear-notifications', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

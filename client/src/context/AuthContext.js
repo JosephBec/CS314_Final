@@ -27,6 +27,8 @@ export const AuthProvider = ({ children }) => {
       const userToStore = {
         id: response.data._id,
         username: response.data.username,
+        firstName: response.data.firstName || '',
+        lastName: response.data.lastName || '',
         profileImage: response.data.profileImage || ''
       };
 
@@ -82,4 +84,4 @@ export const useAuth = () => {
   return context;
 };
 
-export default AuthContext; 
+export default AuthContext;

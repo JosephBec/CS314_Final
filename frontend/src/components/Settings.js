@@ -13,7 +13,10 @@ function Settings({ onClose }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [bio, setBio] = useState(user?.bio || '');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
   const [isSavingBio, setIsSavingBio] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [charCount, setCharCount] = useState(bio.length);
 
   // Fetch user data to get the latest bio
@@ -23,6 +26,8 @@ function Settings({ onClose }) {
         if (user && user.id) {
           const response = await axios.get(`http://localhost:5000/api/users/${user.id}`);
           setBio(response.data.bio || '');
+          setFirstName(response.data.firstName || '');
+          setLastName(response.data.lastName || '');
           setCharCount(response.data.bio ? response.data.bio.length : 0);
         }
       } catch (error) {
@@ -123,6 +128,62 @@ function Settings({ onClose }) {
     }
   };
 
+  const handleFirstNameChange = (e) => {
+    setFirstName(e.target.value);
+  };
+
+  const handleLastNameChange = (e) => {
+    setLastName(e.target.value);
+  };
+
+  const updateProfile = async () => {
+    setIsUpdatingProfile(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Log what we're sending to the server
+      console.log('Sending profile update with:', { firstName, lastName });
+      
+      const response = await axios.put(
+        `http://localhost:5000/api/users/${user.id}/profile`,
+        { firstName, lastName },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log('Profile update response:', response.data);
+      
+      // Create an updated user object with the new first and last name
+      const updatedUser = {
+        ...user,
+        firstName: firstName,
+        lastName: lastName
+      };
+      
+      console.log('Updated user object:', updatedUser);
+      
+      // Update user in context
+      updateUser(updatedUser);
+      
+      // Directly update localStorage as well to ensure it's saved
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Double-check that localStorage was updated
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      console.log('User in localStorage after update:', storedUser);
+      
+      setSuccess('Profile updated successfully!');
+    } catch (error) {
+      setError('Error updating profile: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
       'Are you sure you want to delete your account? This action cannot be undone.'
@@ -219,6 +280,37 @@ function Settings({ onClose }) {
             className="save-bio-button"
           >
             {isSavingBio ? 'Saving...' : 'Save Bio'}
+          </button>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Profile Information</h3>
+        <div className="profile-info-section">
+          <div className="profile-info-field">
+            <label>First Name:</label>
+            <input 
+              type="text" 
+              value={firstName} 
+              onChange={handleFirstNameChange} 
+              className="profile-info-input"
+            />
+          </div>
+          <div className="profile-info-field">
+            <label>Last Name:</label>
+            <input 
+              type="text" 
+              value={lastName} 
+              onChange={handleLastNameChange} 
+              className="profile-info-input"
+            />
+          </div>
+          <button 
+            onClick={updateProfile} 
+            disabled={isUpdatingProfile}
+            className="update-profile-button"
+          >
+            {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
           </button>
         </div>
       </div>

@@ -66,6 +66,8 @@ router.post('/login', async (req, res) => {
     const userResponse = {
       _id: user._id,
       username: user.username,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
       profileImage: user.profileImage || '',
       bio: user.bio || ''
     };

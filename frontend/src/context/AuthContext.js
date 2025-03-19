@@ -26,6 +26,8 @@ export const AuthProvider = ({ children }) => {
       const userToStore = {
         id: response.data._id,
         username: response.data.username,
+        firstName: response.data.firstName || '',
+        lastName: response.data.lastName || '',
         profileImage: response.data.profileImage || '',
         bio: response.data.bio || ''
       };
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
+    console.log('AuthContext updateUser called with:', userData);
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
   };

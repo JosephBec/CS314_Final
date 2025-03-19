@@ -8,7 +8,24 @@ import Message from './Message';
 import './Dashboard.css';
 
 function Dashboard() {
+  // Get the latest user data from localStorage
+  const storedUser = JSON.parse(localStorage.getItem('user'));
   const { user, logout, updateUser, setUser } = useAuth();
+  
+  // Use the latest user data
+  useEffect(() => {
+    // On component mount, check localStorage for updated user info
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (storedUser && JSON.stringify(storedUser) !== JSON.stringify(user)) {
+      console.log('Updating user from localStorage:', storedUser);
+      setUser(storedUser);
+    }
+    
+    // Debug user state
+    console.log('Dashboard useEffect - current user:', user);
+    console.log('Dashboard useEffect - localStorage user:', storedUser);
+  }, []); // Empty dependency array to run only on mount
+
   const { socket } = useSocket();
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
@@ -1222,6 +1239,37 @@ function Dashboard() {
     }
   };
 
+  // Fetch the latest user data from the server on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      if (user && user.id) {
+        try {
+          const response = await axios.get(`http://localhost:5000/api/users/${user.id}`);
+          console.log('Fetched current user data:', response.data);
+          
+          // Update user in context if data is different
+          if (response.data && 
+              (response.data.firstName !== user.firstName || 
+               response.data.lastName !== user.lastName)) {
+            
+            const updatedUser = {
+              ...user,
+              firstName: response.data.firstName || '',
+              lastName: response.data.lastName || ''
+            };
+            
+            console.log('Updating user with server data:', updatedUser);
+            updateUser(updatedUser);
+          }
+        } catch (error) {
+          console.error('Error fetching current user:', error);
+        }
+      }
+    };
+    
+    fetchCurrentUser();
+  }, []);
+
   // Render friends list with unread counts
   const renderFriendsList = () => {
     return friends.map(friend => (
@@ -1238,7 +1286,7 @@ function Dashboard() {
       >
         <img
           src={friend.profileImage || '/default-avatar.png'}
-          alt={friend.username}
+          alt="Profile"
           className="profile-picture"
           onError={(e) => {
             e.target.onerror = null;
@@ -1289,6 +1337,9 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="sidebar">
+        {console.log('Current user object:', JSON.stringify(user))}
+        {console.log('firstName:', user?.firstName, 'lastName:', user?.lastName)}
+        {console.log('firstName type:', typeof user?.firstName, 'lastName type:', typeof user?.lastName)}
         <div className="user-header">
           <div className="user-info">
             <img
@@ -1302,6 +1353,17 @@ function Dashboard() {
             />
             <div className="user-details">
               <h2>{user?.username}</h2>
+              <div className="user-fullname">
+                {console.log('User object from localStorage:', JSON.parse(localStorage.getItem('user')))}
+                {console.log('Current user display name:', user?.firstName, user?.lastName)}
+                {
+                  <span style={{color: '#444', fontWeight: 'normal'}}>
+                    {user && (user.firstName || user.lastName) ? 
+                      `${user.firstName || ''} ${user.lastName || ''}` : 
+                      'Add your name in Settings'}
+                  </span>
+                }
+              </div>
               {user?.bio && <p className="user-bio">{user.bio}</p>}
             </div>
           </div>
@@ -1355,7 +1417,11 @@ function Dashboard() {
       </div>
 
       {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <Settings onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
       )}
 
       {showCreateGroup && (
@@ -1556,4 +1622,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard; 
+export default Dashboard;

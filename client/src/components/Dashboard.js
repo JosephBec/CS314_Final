@@ -17,10 +17,6 @@ function Dashboard() {
   const [newMessage, setNewMessage] = useState('');
   const [newFriendUsername, setNewFriendUsername] = useState('');
   const [error, setError] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [imageVersion, setImageVersion] = useState(0);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
   const [groupChats, setGroupChats] = useState([]);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -34,9 +30,10 @@ function Dashboard() {
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('requests');
-  const [uploadError, setUploadError] = useState(null);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [imageCaption, setImageCaption] = useState('');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   console.log('Current user in Dashboard:', user);
 
@@ -350,87 +347,6 @@ function Dashboard() {
     });
   };
 
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setShowImageModal(true);
-      // Clear the input value to allow the same file to be selected again
-      e.target.value = '';
-    }
-  };
-
-  const handleImageSend = async (e) => {
-    e.preventDefault();
-    if (!selectedImage || (!selectedFriend && !selectedGroupChat)) return;
-
-    // First, send the image
-    const imageFormData = new FormData();
-    imageFormData.append('image', selectedImage);
-    imageFormData.append('sender', user.id);
-    
-    if (selectedFriend) {
-      imageFormData.append('receiver', selectedFriend._id);
-    } else {
-      imageFormData.append('groupId', selectedGroupChat._id);
-    }
-
-    try {
-      // Send image message
-      const endpoint = selectedGroupChat 
-        ? 'http://localhost:5000/api/messages/group'
-        : 'http://localhost:5000/api/messages/send';
-
-      const imageResponse = await axios.post(
-        endpoint,
-        imageFormData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      setMessages(prevMessages => [...prevMessages, imageResponse.data]);
-
-      // If there's a caption, send it as a separate text message
-      if (imageCaption.trim()) {
-        const response = await axios.post(endpoint, {
-          sender: user.id,
-          ...(selectedFriend ? { receiver: selectedFriend._id } : { groupId: selectedGroupChat._id }),
-          content: imageCaption.trim()
-        });
-        setMessages(prevMessages => [...prevMessages, response.data]);
-      }
-
-      // Clear states
-      setSelectedImage(null);
-      setImageCaption('');
-      setShowImageModal(false);
-      
-      // Fetch latest messages
-      if (selectedGroupChat) {
-        await fetchGroupMessages(selectedGroupChat._id);
-      } else {
-        await fetchMessages(selectedFriend._id);
-      }
-    } catch (error) {
-      console.error('Error sending image:', error);
-    }
-  };
-
-  const formatReadReceipt = (message) => {
-    if (message.sender !== user.id) return null;
-    
-    if (message.read) {
-      return (
-        <div className="read-receipt read">
-          Read {message.readAt ? formatTime(message.readAt) : ''}
-        </div>
-      );
-    }
-    return <div className="read-receipt">Sent</div>;
-  };
-
   const fetchGroupChats = async () => {
     try {
       const response = await axios.get(`http://localhost:5000/api/groupchats/user/${user.id}`);
@@ -499,20 +415,15 @@ function Dashboard() {
 
   const sendGroupMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() && !selectedImage) return;
-
-    const formData = new FormData();
-    formData.append('sender', user.id);
-    formData.append('groupId', selectedGroupChat._id);
-    if (newMessage.trim()) formData.append('content', newMessage);
-    if (selectedImage) formData.append('image', selectedImage);
+    if (!newMessage.trim()) return;
 
     try {
-      await axios.post('http://localhost:5000/api/messages/group', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      await axios.post('http://localhost:5000/api/messages/group', {
+        sender: user.id,
+        groupId: selectedGroupChat._id,
+        content: newMessage
       });
       setNewMessage('');
-      setSelectedImage(null);
       fetchGroupMessages(selectedGroupChat._id);
     } catch (error) {
       console.error('Error sending group message:', error);
@@ -598,29 +509,15 @@ function Dashboard() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() && !selectedImage) return;
+    if (!newMessage.trim()) return;
     if (!selectedFriend && !selectedGroupChat) return;
 
-    const formData = new FormData();
-    formData.append('sender', user.id);
-    
-    if (selectedFriend) {
-      formData.append('receiver', selectedFriend._id);
-    } else {
-      formData.append('groupId', selectedGroupChat._id);
-    }
-
-    if (newMessage.trim()) formData.append('content', newMessage.trim());
-    if (selectedImage) formData.append('image', selectedImage);
-
     try {
-      const endpoint = selectedGroupChat 
-        ? 'http://localhost:5000/api/messages/group'
-        : 'http://localhost:5000/api/messages/send';
-
-      console.log('Sending message to endpoint:', endpoint);
-      const response = await axios.post(endpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await axios.post('http://localhost:5000/api/messages/send', {
+        sender: user.id,
+        receiver: selectedFriend?._id,
+        groupId: selectedGroupChat?._id,
+        content: newMessage
       });
       
       console.log('Message sent:', response.data);
@@ -630,7 +527,6 @@ function Dashboard() {
       
       // Clear input
       setNewMessage('');
-      setSelectedImage(null);
       
       // Fetch latest messages
       if (selectedGroupChat) {
@@ -713,77 +609,30 @@ function Dashboard() {
     }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      setPreviewImage(URL.createObjectURL(file));
-      setUploadError(null);
-    }
-  };
-
-  const handleImageUpload = async () => {
-    if (!selectedImage) return;
-
-    const formData = new FormData();
-    formData.append('profileImage', selectedImage);
-
+  const updateProfile = async () => {
+    setIsUpdatingProfile(true);
     try {
-      console.log('Current user before upload:', user);
+      const response = await axios.post(`http://localhost:5000/api/users/${user.id}/update-profile`, {
+        firstName: firstName,
+        lastName: lastName
+      });
       
-      const response = await axios.post(
-        `http://localhost:5000/api/users/${user.id}/profile-image`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      console.log('Upload response:', response.data);
-
-      // Get the new image URL from the response
-      const newImageUrl = response.data.profileImage;
-
-      // Create updated user object
+      console.log('Update profile response:', response.data);
+      
+      // Update the user in the state
       const updatedUser = {
         ...user,
-        profileImage: newImageUrl
+        firstName: firstName,
+        lastName: lastName
       };
-
-      console.log('Updated user object:', updatedUser);
-
-      // Update both states
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      // Force a re-render
-      setImageVersion(prev => prev + 1);
-
-      // Reset states
-      setSelectedImage(null);
-      setPreviewImage(null);
-      setUploadError(null);
-      setShowSettings(false);
-
-      // Refresh the page to ensure all components update
-      window.location.reload();
-
+      
+      // Update user in context
+      updateUser(updatedUser);
+      setIsUpdatingProfile(false);
     } catch (error) {
-      console.error('Upload error:', error);
-      console.error('Error response:', error.response?.data);
-      setUploadError(
-        error.response?.data?.error || 
-        'Failed to update profile image. Please try again.'
-      );
+      console.error('Error updating profile:', error);
+      setIsUpdatingProfile(false);
     }
-  };
-
-  // Update all instances of the profile image display to use the same format
-  const getProfileImageUrl = (imageUrl) => {
-    if (!imageUrl) return '/default-avatar.png';
-    return `${imageUrl}?v=${imageVersion}`;
   };
 
   const handleMessageDelete = (messageId) => {
@@ -820,7 +669,7 @@ function Dashboard() {
         <div className="user-header">
           <div className="user-info">
             <img
-              src={getProfileImageUrl(user?.profileImage)}
+              src={user?.profileImage || '/default-avatar.png'}
               alt="Profile"
               className="profile-picture"
               onError={(e) => {
@@ -829,6 +678,11 @@ function Dashboard() {
               }}
             />
             <h2>{user?.username}</h2>
+            {(user?.firstName || user?.lastName) && (
+              <span className="user-full-name">
+                {user?.firstName} {user?.lastName}
+              </span>
+            )}
           </div>
         </div>
 
@@ -936,16 +790,6 @@ function Dashboard() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
               />
-              <label className="image-upload-label">
-                📷
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="image-upload"
-                  id="image-upload"
-                />
-              </label>
               <button type="submit">Send</button>
             </form>
           </>
@@ -955,64 +799,6 @@ function Dashboard() {
           </div>
         )}
       </div>
-
-      {showSettings && (
-        <div className="settings-modal">
-          <div className="settings-content">
-            <div className="settings-header">
-              <h2>Settings</h2>
-              <button 
-                className="close-button"
-                onClick={() => setShowSettings(false)}
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="profile-image-section">
-              <div className="profile-image-container">
-                <img
-                  src={previewImage || user?.profileImage || '/default-avatar.png'}
-                  alt="Profile"
-                  className="profile-image-preview"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/default-avatar.png';
-                  }}
-                />
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="file-input"
-                id="profile-image-input"
-              />
-              <label htmlFor="profile-image-input" className="file-input-label">
-                Choose Image
-              </label>
-              {selectedImage && (
-                <button
-                  className="upload-button"
-                  onClick={handleImageUpload}
-                >
-                  Upload Profile Picture
-                </button>
-              )}
-              {uploadError && <div className="error-message">{uploadError}</div>}
-            </div>
-
-            <div className="account-actions">
-              <button
-                className="delete-account-button"
-                onClick={deleteAccount}
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showCreateGroup && (
         <div className="modal">
@@ -1163,48 +949,10 @@ function Dashboard() {
         </div>
       )}
 
-      {showImageModal && (
-        <div className="modal-overlay">
-          <div className="image-upload-modal">
-            <div className="modal-header">
-              <h3>Send Image</h3>
-              <button 
-                className="close-button"
-                onClick={() => {
-                  setShowImageModal(false);
-                  setSelectedImage(null);
-                  setImageCaption('');
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleImageSend}>
-              <div className="modal-content">
-                <img 
-                  src={URL.createObjectURL(selectedImage)} 
-                  alt="Preview" 
-                  className="image-preview"
-                />
-                <textarea
-                  placeholder="Add a message..."
-                  value={imageCaption}
-                  onChange={(e) => setImageCaption(e.target.value)}
-                  className="image-caption-input"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleImageSend(e);
-                    }
-                  }}
-                />
-              </div>
-              <div className="modal-footer">
-                <button type="submit" className="send-button">
-                  Send
-                </button>
-              </div>
-            </form>
+      {showSettings && (
+        <div className="settings-modal">
+          <div className="settings-content">
+            <Settings onClose={() => setShowSettings(false)} />
           </div>
         </div>
       )}
@@ -1212,4 +960,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard; 
+export default Dashboard;

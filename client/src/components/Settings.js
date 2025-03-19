@@ -10,6 +10,9 @@ function Settings({ onClose }) {
   const [previewUrl, setPreviewUrl] = useState(user?.profileImage || '/default-avatar.png');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -61,6 +64,37 @@ function Settings({ onClose }) {
       setError('Error uploading image: ' + (error.response?.data?.error || error.message));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const updateProfile = async () => {
+    setIsUpdatingProfile(true);
+    setError('');
+
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/users/${user.id}/update-profile`,
+        {
+          firstName,
+          lastName
+        }
+      );
+      
+      console.log('Update profile response:', response.data);
+      
+      const updatedUser = {
+        ...user,
+        firstName,
+        lastName
+      };
+      
+      updateUser(updatedUser);
+      setError('Profile information updated successfully!');
+    } catch (error) {
+      console.error('Update profile error:', error);
+      setError('Error updating profile: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -118,6 +152,7 @@ function Settings({ onClose }) {
       {error && <div className="error">{error}</div>}
       
       <div className="profile-image-section">
+        <h3>Profile Image</h3>
         <div className="profile-image-container">
           <img 
             src={previewUrl} 
@@ -146,6 +181,37 @@ function Settings({ onClose }) {
         )}
       </div>
 
+      <div className="profile-info-section">
+        <h3>Profile Information</h3>
+        <div className="form-group">
+          <label htmlFor="firstName">First Name</label>
+          <input
+            type="text"
+            id="firstName"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Enter your first name"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="lastName">Last Name</label>
+          <input
+            type="text"
+            id="lastName"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Enter your last name"
+          />
+        </div>
+        <button 
+          onClick={updateProfile} 
+          disabled={isUpdatingProfile}
+          className="update-profile-button"
+        >
+          {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
+        </button>
+      </div>
+
       <div className="danger-zone">
         <h3>Danger Zone</h3>
         <p>Once you delete your account, there is no going back. Please be certain.</p>
@@ -162,4 +228,4 @@ function Settings({ onClose }) {
   );
 }
 
-export default Settings; 
+export default Settings;

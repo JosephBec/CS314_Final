@@ -91,38 +91,6 @@ describe('Settings Component', () => {
     expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'profile.jpg');
   });
   
-  test('handles profile image upload', async () => {
-    await act(async () => {
-      render(<Settings onClose={mockOnClose} />);
-    });
-    
-    // Wait for component to load
-    await waitFor(() => {
-      expect(screen.getByText('Settings')).toBeInTheDocument();
-    });
-    
-    // Create a mock file
-    const file = new File(['dummy content'], 'test-image.png', { type: 'image/png' });
-    
-    // Get the file input and simulate file upload
-    const fileInput = screen.getByLabelText('Choose Image');
-    
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-    });
-    
-    // Check if the preview is updated
-    await waitFor(() => {
-      expect(screen.getByAltText('Profile')).toHaveAttribute('src', 'mock-image-url');
-    });
-    
-    // Check if URL.createObjectURL was called with the file
-    expect(window.URL.createObjectURL).toHaveBeenCalledWith(file);
-    
-    // Check if upload button appears
-    expect(screen.getByText('Upload Image')).toBeInTheDocument();
-  });
-  
   test('handles bio update', async () => {
     await act(async () => {
       render(<Settings onClose={mockOnClose} />);

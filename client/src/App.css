@@ -107,6 +107,15 @@ button:hover {
   font-size: 1.2em;
 }
 
+.user-full-name {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 2px;
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+
 .user-info .profile-picture {
   width: 32px;
   height: 32px;
@@ -515,8 +524,8 @@ button:hover {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -525,25 +534,48 @@ button:hover {
 }
 
 .settings-content {
-  background: white;
-  padding: 20px;
+  background-color: white;
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.close-button {
+.settings-container {
+  padding: 20px;
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.settings-container h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.settings-container h3 {
+  margin-top: 20px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.settings-container .close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  padding: 5px 10px;
   color: #666;
-  transition: color 0.2s ease;
 }
 
-.close-button:hover {
-  color: #333;
+.settings-container .close-button:hover {
+  color: #000;
 }
 
 .profile-image-section {
@@ -565,19 +597,6 @@ button:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.profile-picture {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.user-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .file-input {
@@ -613,560 +632,26 @@ button:hover {
   background-color: #218838;
 }
 
-.error-message {
+.error {
   color: #dc3545;
-  margin-top: 10px;
-  font-size: 0.9em;
-}
-
-.chat-header-user {
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: white;
-  position: relative;
-  z-index: 1;
-}
-
-.chat-header-user .user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: none;
-}
-
-.chat-header-user .user-info h3 {
-  margin: 0;
-  padding: 0;
-  border: none;
-}
-
-.chat-header-user .profile-picture {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.remove-friend-button {
-  padding: 8px 16px;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.chat-messages,
-.message-container {
-  border-top: none;
-}
-
-.message-timestamp {
-  color: inherit;
-  margin: 0;
-}
-
-.message.sent .message-timestamp {
-  color: #ccc;
-  text-align: right;
-}
-
-.message.received .message-timestamp {
-  text-align: left;
-}
-
-.message-image {
-  max-width: 300px;
-  max-height: 300px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.message-image:hover {
-  transform: scale(1.02);
-}
-
-.image-upload {
-  display: none;
-}
-
-.image-upload-label {
-  cursor: pointer;
-  font-size: 1.5em;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s ease;
-}
-
-.image-upload-label:hover {
-  transform: scale(1.1);
-}
-
-.message-bubble {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.message-info {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7em;
-  color: #666;
-  margin: 2px 4px 0;
-}
-
-.message.sent .message-info {
-  justify-content: flex-end;
-  color: #ccc;
-}
-
-.read-receipt {
-  font-size: 0.9em;
-  color: #999;
-}
-
-.read-receipt.read {
-  color: #007bff;
-}
-
-.create-group-button {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.group-chat-item {
-  padding: 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.group-chat-item:hover {
-  background-color: #f0f0f0;
-}
-
-.group-chat-item.selected {
-  background-color: #e0e0e0;
-}
-
-.group-chat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.group-chat-info h4 {
-  margin: 0;
-}
-
-.group-chat-info span {
-  font-size: 0.8em;
-  color: #666;
-}
-
-.chat-header-group {
-  padding: 15px 20px;
-  background-color: white;
-  width: 100%;
-}
-
-.group-header {
-  padding: 0;
-  background-color: white;
-}
-
-.group-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.group-info-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 10px;
-}
-
-.group-info-left h3 {
-  margin: 0;
-}
-
-.member-count {
-  color: #666;
-  font-size: 0.9em;
-}
-
-.group-actions {
-  display: flex;
-  gap: 10px;
-  margin-right: 10px;
-}
-
-.add-members-button {
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #28a745;
-  color: white;
-  border: none;
-}
-
-.leave-group-button {
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-}
-
-.member-selection {
-  max-height: 200px;
-  overflow-y: auto;
   margin: 10px 0;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.member-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px;
-  cursor: pointer;
-}
-
-.modal-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.chats-section {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.chat-item {
-  display: flex;
-  align-items: center;
   padding: 8px;
-  cursor: pointer;
-  border-radius: 8px;
-  margin: 5px 0;
-  transition: background-color 0.2s;
-  height: 45px;
-  overflow: hidden;
-  background-color: #f8f9fa;
-}
-
-.chat-item:hover {
-  background-color: #f0f0f0;
-}
-
-.chat-item.selected {
-  background-color: #e0e0e0;
-}
-
-.chat-item-picture {
-  min-width: 35px;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  margin-right: 8px;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.chat-item-picture img {
-  width: 35px;
-  height: 35px;
-  object-fit: cover;
-  display: block;
-}
-
-.chat-item img {
-  width: 35px;
-  height: 35px;
-  object-fit: cover;
-  display: block;
-}
-
-.chat-item-info {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-item-info h4 {
-  margin: 0;
-  font-size: 0.9em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chat-item-info span {
-  font-size: 0.8em;
-  color: #666;
-}
-
-.leave-group-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 5px 10px;
+  background-color: #f8d7da;
   border-radius: 4px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.leave-group-button:hover {
-  background-color: #c82333;
-}
-
-.chat-header-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.chat-header .profile-picture {
-  width: 40px;
-  height: 40px;
-}
-
-.user-profile .profile-picture {
-  width: 50px;
-  height: 50px;
-}
-
-.friend-requests-button.has-notifications {
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.friend-requests-list {
-  max-height: 300px;
-  overflow-y: auto;
-  margin: 10px 0;
-}
-
-.friend-request {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  margin: 5px 0;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-}
-
-.friend-request-buttons {
-  display: flex;
-  gap: 5px;
-}
-
-.friend-request-buttons button {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.friend-request-buttons button.accept {
-  background-color: #28a745;
-  color: white;
-}
-
-.friend-request-buttons button.accept:hover {
-  background-color: #218838;
-}
-
-.friend-request-buttons button.reject {
-  background-color: #dc3545;
-  color: white;
-}
-
-.friend-request-buttons button.reject:hover {
-  background-color: #c82333;
-}
-
-.no-requests {
-  color: #666;
-  font-style: italic;
   text-align: center;
-  padding: 20px;
 }
 
-.chat-header-user {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.remove-friend-button {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 12px;
+.danger-zone {
+  margin-top: 30px;
+  padding: 15px;
+  background-color: #f8d7da;
   border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  text-align: center;
 }
 
-.remove-friend-button:hover {
-  background-color: #c82333;
-}
-
-.add-friend-button {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-}
-
-.add-friend-button:hover {
-  background-color: #f0f0f0;
-}
-
-.friend-username-input {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.friend-username-input:focus {
-  outline: none;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
-}
-
-/* Modal header styles */
-.modal-header {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-.tab-hover-area {
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 10px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.tab-hover-area:hover {
-  opacity: 1;
-}
-
-.tab-button {
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  color: #666;
-  transition: all 0.2s ease;
-}
-
-.tab-button:hover {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-/* Settings modal styles */
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.close-button-container {
-  position: absolute;
-  top: 0;
-  right: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.settings-content:hover .close-button-container {
-  opacity: 1;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 5px 10px;
-  color: #666;
-  transition: color 0.2s ease;
-}
-
-.close-button:hover {
-  color: #333;
-}
-
-/* Tab notification styles */
-.tab-notification {
+.danger-zone h3 {
   color: #dc3545;
-  margin-left: 5px;
-}
-
-.account-actions {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ccc;
+  border-bottom: none;
 }
 
 .delete-account-button {
@@ -1176,30 +661,12 @@ button:hover {
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  width: 100%;
+  margin-top: 10px;
+  transition: background-color 0.2s;
 }
 
 .delete-account-button:hover {
   background-color: #c82333;
-}
-
-.settings-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #666;
-  font-size: 0.9em;
-  transition: background-color 0.2s;
-}
-
-.settings-button:hover {
-  background-color: #f0f0f0;
-  color: #333;
 }
 
 .modal-header {
@@ -1488,4 +955,46 @@ div[class*="message"] {
   padding: 15px;
   border-bottom: 1px solid #e0e0e0;
   margin-bottom: 15px;
+}
+
+.login-container button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.profile-info-section {
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.update-profile-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+}
+
+.update-profile-button:hover {
+  background-color: #0069d9;
 }

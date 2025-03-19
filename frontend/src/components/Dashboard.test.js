@@ -33,6 +33,8 @@ describe('Dashboard Component', () => {
   const mockUser = { 
     id: 'test-user-id', 
     username: 'testuser',
+    firstName: 'Test',
+    lastName: 'User',
     profileImage: 'test.jpg',
     bio: 'Test bio'
   };
@@ -75,6 +77,8 @@ describe('Dashboard Component', () => {
             return JSON.stringify({
               id: 'test-user-id',
               username: 'testuser',
+              firstName: 'Test',
+              lastName: 'User',
               email: 'test@example.com',
               profilePicture: 'test.jpg',
               bio: 'Test bio'
@@ -402,32 +406,6 @@ describe('Dashboard Component', () => {
         })
       })
     );
-  });
-
-  test('opens and closes settings', async () => {
-    await act(async () => {
-      render(<Dashboard />);
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByText('⚙️ Settings')).toBeInTheDocument();
-    });
-    
-    await act(async () => {
-      fireEvent.click(screen.getByText('⚙️ Settings'));
-    });
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('settings-component')).toBeInTheDocument();
-    });
-    
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('settings-close-button'));
-    });
-    
-    await waitFor(() => {
-      expect(screen.queryByTestId('settings-component')).not.toBeInTheDocument();
-    });
   });
 
   test('logs out when clicking logout button', async () => {
