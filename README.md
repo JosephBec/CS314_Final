@@ -1,12 +1,10 @@
 # Features Added For Extra Credit
 - I did the whole thing full stack
 - sending images
-- live typing indecators (work for both DMs and groupchats)
-- read recipts
-- notifcation sounds
+- live typing indicators (work for both DMs and group chats)
+- read receipts
+- notification sounds
 - browser tab unread message count
-- in application unread message counter
-
 
 # MERN Stack Chat Application
 

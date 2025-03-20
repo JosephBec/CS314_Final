@@ -5,9 +5,9 @@
     "passes": 2,
     "pending": 0,
     "failures": 0,
-    "start": "2025-03-19T05:49:56.996Z",
-    "end": "2025-03-19T05:50:01.940Z",
-    "duration": 4944,
+    "start": "2025-03-19T20:18:41.764Z",
+    "end": "2025-03-19T20:18:46.939Z",
+    "duration": 5175,
     "testsRegistered": 2,
     "passPercent": 100,
     "pendingPercent": 0,
@@ -18,7 +18,7 @@
   },
   "results": [
     {
-      "uuid": "4da7bd8e-26d1-43f1-826c-83fce2c555e8",
+      "uuid": "5da45739-593d-45a6-93e9-59a58278906a",
       "title": "",
       "fullFile": "cypress\\e2e\\authentication.cy.js",
       "file": "cypress\\e2e\\authentication.cy.js",
@@ -27,7 +27,7 @@
       "tests": [],
       "suites": [
         {
-          "uuid": "7b0ac70d-015d-4bc0-9564-4723c951329f",
+          "uuid": "0bc10c43-9ab5-4eae-84c1-90e5b4331c84",
           "title": "4.1 User Authentication",
           "fullFile": "",
           "file": "",
@@ -38,7 +38,7 @@
               "title": "4.1.1 should register a new user with valid credentials",
               "fullTitle": "4.1 User Authentication 4.1.1 should register a new user with valid credentials",
               "timedOut": null,
-              "duration": 3365,
+              "duration": 3555,
               "state": "passed",
               "speed": "fast",
               "pass": true,
@@ -47,8 +47,8 @@
               "context": null,
               "code": "// Generate a unique username to avoid conflicts\nconst uniqueUsername = `testuser_${Date.now()}`;\nconst password = 'Password123';\n// Navigate directly to the registration page\ncy.visit('/register');\ncy.log('Visiting register page');\n// Fill in the registration form using selectors from fixture\ncy.get(selectors.auth.registerPage.usernameInput).type(uniqueUsername);\ncy.get(selectors.auth.registerPage.passwordInput).type(password);\ncy.log('Filled in registration form');\n// Submit the form\ncy.get(selectors.auth.registerPage.submitButton).click();\ncy.log('Submitted registration form');\n// Verify successful registration by checking we're redirected to login page\ncy.url().should('include', '/login');\ncy.log('Redirected to login page after registration');\n// Verify login works with the new credentials\ncy.get(selectors.auth.loginPage.usernameInput).clear().type(uniqueUsername, {\n  force: true\n});\ncy.get(selectors.auth.loginPage.passwordInput).clear().type(password, {\n  force: true\n});\ncy.log('Filled in login form');\n// Take a screenshot before clicking login\ncy.screenshot('before-login-click');\ncy.get(selectors.auth.loginPage.submitButton).click();\ncy.log('Submitted login form');\n// Take a screenshot after clicking login\ncy.screenshot('after-login-click');\n// Add a longer timeout and log the URL for debugging\ncy.url().then(url => {\n  cy.log(`Current URL: ${url}`);\n});\n// Verify successful login by checking we're redirected to dashboard\ncy.url().should('include', '/dashboard', {\n  timeout: 20000\n});\n// Skip the username check for now to focus on the redirection issue\n// cy.contains(uniqueUsername).should('be.visible');",
               "err": {},
-              "uuid": "4e5d7c3f-49d3-40a6-af74-5ab1eaf4d109",
-              "parentUUID": "7b0ac70d-015d-4bc0-9564-4723c951329f",
+              "uuid": "df4a5709-4f59-44cb-86bd-d2ec373aa6f7",
+              "parentUUID": "0bc10c43-9ab5-4eae-84c1-90e5b4331c84",
               "isHook": false,
               "skipped": false
             },
@@ -56,7 +56,7 @@
               "title": "4.2 should handle failed login attempt with incorrect password",
               "fullTitle": "4.1 User Authentication 4.2 should handle failed login attempt with incorrect password",
               "timedOut": null,
-              "duration": 1540,
+              "duration": 1582,
               "state": "passed",
               "speed": "fast",
               "pass": true,
@@ -65,21 +65,21 @@
               "context": null,
               "code": "// Set up test data\nconst username = `existinguser_${Date.now()}`;\nconst correctPassword = 'correctPassword123';\nconst incorrectPassword = 'wrongPassword123';\nconst email = `${username}@example.com`;\n// First, ensure the user exists by registering them\n// This step ensures we have a user to test against\ncy.request({\n  method: 'POST',\n  url: 'http://localhost:5000/api/auth/register',\n  body: {\n    username,\n    password: correctPassword\n  },\n  failOnStatusCode: false // Don't fail if user already exists\n});\n// Navigate directly to login page\ncy.visit('/login');\n// Attempt login with incorrect password using selectors from fixture\ncy.get(selectors.auth.loginPage.usernameInput).type(username);\ncy.get(selectors.auth.loginPage.passwordInput).type(incorrectPassword);\ncy.get(selectors.auth.loginPage.submitButton).click();\n// Take a screenshot for debugging\ncy.screenshot('failed-login-error');\n// Verify error message is displayed with the exact text\ncy.get(selectors.auth.loginPage.errorMessage).should('be.visible').should('contain', 'Invalid username or password');\n// Verify we remain on the login page\ncy.url().should('include', '/login');",
               "err": {},
-              "uuid": "0a14e7ec-e27a-4efb-92e4-a066595eb792",
-              "parentUUID": "7b0ac70d-015d-4bc0-9564-4723c951329f",
+              "uuid": "79bbcbb9-71c8-48cb-9f3b-46b9021e52ef",
+              "parentUUID": "0bc10c43-9ab5-4eae-84c1-90e5b4331c84",
               "isHook": false,
               "skipped": false
             }
           ],
           "suites": [],
           "passes": [
-            "4e5d7c3f-49d3-40a6-af74-5ab1eaf4d109",
-            "0a14e7ec-e27a-4efb-92e4-a066595eb792"
+            "df4a5709-4f59-44cb-86bd-d2ec373aa6f7",
+            "79bbcbb9-71c8-48cb-9f3b-46b9021e52ef"
           ],
           "failures": [],
           "pending": [],
           "skipped": [],
-          "duration": 4905,
+          "duration": 5137,
           "root": false,
           "rootEmpty": false,
           "_timeout": 2000
