@@ -1,3 +1,13 @@
+# Features Added For Extra Credit
+- I did the whole thing full stack
+- sending images
+- live typing indecators (work for both DMs and groupchats)
+- read recipts
+- notifcation sounds
+- browser tab unread message count
+- in application unread message counter
+
+
 # MERN Stack Chat Application
 
 A full-stack real-time chat application built with the MERN stack (MongoDB, Express, React, Node.js).
